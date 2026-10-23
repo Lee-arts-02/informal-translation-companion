@@ -32,6 +32,14 @@ To translate your own text:
 No key is included in this repository. No shared AI account is provided to
 portfolio visitors. A saved session key is not verified until a request succeeds.
 
+Live mode offers 28 language choices in both directions, including **Chinese
+(Simplified)**, **Chinese (Traditional)**, and **Cantonese (Traditional)**.
+Other choices include Arabic, Bengali, Dutch, English, French, German, Greek,
+Hebrew, Hindi, Indonesian, Italian, Japanese, Korean, Malay, Persian, Polish,
+Portuguese, Russian, Spanish, Tamil, Thai, Turkish, Ukrainian, Urdu, and Vietnamese.
+The source language can also be auto-detected. Translation quality and dialect
+coverage depend on the selected AI model. Demo mode keeps its three fixed examples.
+
 ## Run locally
 
 Serve the directory over HTTP (ES modules do not work reliably via `file://`):
