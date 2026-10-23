@@ -3,16 +3,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="description" content="Say what you mean, across languages. NuanceBridge translates with context, culture, and your own voice.">
+  <meta name="description" content="Your words. Your choices. A multilingual writing companion for preserving meaning, personal voice, and cultural expression.">
   <meta name="theme-color" content="#f5f4ef">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src https://openrouter.ai; object-src 'none'; base-uri 'self'; form-action 'none'">
   <title>NuanceBridge — Meaning, carried across.</title>
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./writing.css">
   <script type="module" src="./app.js"></script>
 </head>
 <body>
-  <a class="skip-link" href="#workspace">Skip to translator</a>
+  <a class="skip-link" href="#writing-workspace">Skip to writing companion</a>
   <header class="topbar">
     <a class="brand" href="./" aria-label="NuanceBridge home"><span class="brand-mark" aria-hidden="true">n<span>↗</span></span>NuanceBridge<span class="brand-dot">.</span></a>
     <nav aria-label="Main navigation"><a href="#how-it-works">The idea</a><a href="https://github.com/Lee-arts-02/informal-translation-companion" target="_blank" rel="noopener noreferrer">View source ↗</a><button id="open-settings" class="button small outline">API settings <span aria-hidden="true">⚙</span></button></nav>
@@ -20,11 +21,48 @@
   <main>
     <section class="hero" aria-labelledby="hero-title">
       <div><p class="eyebrow"><span class="tiny-dot"></span> YOUR WORDS. A WORLD OF POSSIBILITIES.</p>
-        <h1 id="hero-title">Meaning, <em>carried across.</em></h1>
-        <p class="hero-copy">More than the right words. The right feeling.<br>A translation companion for the way you actually communicate.</p>
+        <h1 id="hero-title">Your words.<em>Your choices.</em></h1>
+        <p class="hero-copy">Write across languages. Keep what makes it yours.<br>Thoughtful suggestions. Your meaning, your voice, your final say.</p>
       </div>
       <div class="hero-note"><span class="note-symbol" aria-hidden="true">文 ↗ A</span><p>A little context.<br>A lot more connection.</p><span class="mono">LANGUAGE IS HUMAN.</span></div>
     </section>
+    <section id="writing-workspace" class="writing-workspace" aria-labelledby="writing-title">
+      <div class="writing-top"><div><p class="eyebrow">A WRITING PARTNER, WITH YOU IN CONTROL</p><h2 id="writing-title">A little help. Still your voice.</h2></div><div class="writing-modes" role="group" aria-label="Writing mode"><button id="writing-demo-mode" class="active" aria-pressed="true">Guided demo</button><button id="writing-live-mode" aria-pressed="false">Write my own</button></div></div>
+      <div class="writing-steps" aria-label="Writing process"><span>01 · Your intention</span><span>02 · Your draft</span><span>03 · Your decisions</span></div>
+      <div class="writing-context">
+        <label>What do you want to convey?<textarea id="writing-intent" rows="2" maxlength="600" placeholder="e.g. Thank my classmate warmly, while keeping my offer to buy lunch."></textarea></label>
+        <label>What should it avoid?<textarea id="writing-avoid" rows="2" maxlength="600" placeholder="e.g. Sounding distant, or making a stronger promise."></textarea></label>
+        <label>Who will read this?<input id="writing-recipient" maxlength="150" placeholder="A friend, my professor, a group chat…"></label>
+        <label>Describe your relationship<input id="writing-relationship" maxlength="300" placeholder="e.g. We know each other well and work together."></label>
+        <label>Where will you use it?<select id="writing-channel"><option>Text message</option><option>Email</option><option>Social media</option><option>Personal writing</option><option>Creative writing</option><option>Community forum</option></select></label>
+        <label>Writing language<select id="writing-target" aria-label="Writing language"></select></label>
+        <label>Explain suggestions in<select id="explanation-language" aria-label="Explanation language"><option>English</option><option>Chinese (Simplified)</option><option>Chinese (Traditional)</option><option>Spanish</option><option>French</option><option>Urdu</option><option>Hindi</option><option>Arabic</option></select></label>
+        <label>How much help?<select id="writing-scope"><option value="light">Light edits · preserve my voice</option><option value="grammar">Grammar only</option><option value="selection">Only my selected passage</option><option value="explore">Explore local alternatives</option></select></label>
+      </div>
+      <div class="writing-main">
+        <div class="draft-column">
+          <div class="writing-section-heading"><h3>Your working draft</h3><span id="writing-badge" class="badge">CURATED DEMO</span></div>
+          <label class="sr-only" for="writing-draft">Your working draft</label><textarea id="writing-draft" maxlength="6000" rows="9" dir="auto" placeholder="Write in English, Chinese, or a mix of languages. Start with what you mean."></textarea>
+          <div class="draft-meta"><span id="writing-selection">Select a phrase to protect it or request a focused edit.</span><span id="writing-count" class="mono">0 / 6,000</span></div>
+          <div class="draft-toolbar"><button id="protect-selection" class="button small outline">Keep selected words ↗</button><button id="writing-undo" class="button small outline">Undo last change</button><button id="new-writing-session" class="button small outline">New draft</button><button id="show-original" class="text-button">Compare with original</button></div>
+          <p class="field-label">Protected expressions · kept exactly as written</p><div id="protected-phrases" class="protected-phrases" aria-live="polite"></div>
+          <div id="original-panel" class="original-panel" hidden><h4>Original draft</h4><p id="original-text" dir="auto"></p></div>
+          <div class="writing-primary-actions"><button id="analyze-writing" class="button primary">Find focused suggestions ↗</button><button id="writing-cancel" class="button outline" hidden>Cancel request</button></div>
+          <div class="draft-secondary"><button id="starting-draft" class="text-button">Create a starting draft in my writing language</button><button id="writing-style" class="text-button">My voice profile ↗</button></div>
+          <p id="writing-status" class="writing-status" role="status" aria-live="polite"></p><p id="writing-error" class="error" role="alert" hidden></p>
+          <p class="writing-privacy">Your draft and feedback stay in this session unless you export them. Live requests share your draft, context, and enabled preferences with your selected AI provider.</p>
+        </div>
+        <aside class="suggestions-column" aria-label="Writing suggestions" id="suggestions-panel" aria-busy="false">
+          <div class="writing-section-heading"><h3>Consider the possibilities</h3><span id="suggestion-count" class="mono"></span></div>
+          <p id="suggestion-summary" class="suggestion-summary">Every change is a choice. Review the reason and tradeoff before deciding.</p>
+          <div id="writing-suggestions"></div><div id="session-feedback" class="session-feedback"></div>
+        </aside>
+      </div>
+      <div class="writing-reflection"><div class="reflection-heading"><div><p class="eyebrow">BEFORE YOU SEND</p><h3>Does it still mean what you mean?</h3></div><button id="check-meaning" class="button small outline">Meaning &amp; reader check ↗</button></div><div class="back-translation-row"><label>Back-translate into<select id="back-language"><option>Chinese (Simplified)</option><option>English</option><option>Urdu</option><option>Spanish</option><option>French</option><option>Arabic</option></select></label><button id="back-translate" class="button small outline">Back-translate</button></div><p class="help">Reader interpretations are possibilities, not cultural rules. Back-translation helps reflection; it does not prove accuracy.</p><div id="reflection-result" class="reflection-result" aria-live="polite"></div></div>
+      <div class="writing-footer"><span id="writing-session-info">Session-only feedback. You decide what to keep.</span><div><button id="copy-draft" class="button small outline">Copy draft</button><button id="download-draft" class="button small outline">Download draft</button><button id="peer-review" class="button small outline">Invite a human perspective ↗</button></div></div>
+    </section>
+    <section class="writing-examples" aria-label="Guided writing examples"><span class="eyebrow">EXPLORE A WRITING MOMENT</span><div id="writing-examples"></div><p class="help">Authored examples demonstrate the workflow. Live mode is required for AI guidance on your own text.</p></section>
+    <details class="quick-translation" id="translation-tool"><summary>Need a quick translation? Open the original translator <span aria-hidden="true">↗</span></summary>
     <section id="workspace" class="workspace" aria-label="Translation companion">
       <div class="workspace-bar"><div class="mode-switch" role="group" aria-label="Translation mode"><button id="demo-mode" class="active" aria-pressed="true">Explore the demo</button><button id="live-mode" aria-pressed="false">Translate your own <span aria-hidden="true">↗</span></button></div><span id="mode-status" class="status"><span></span> No API key needed</span></div>
       <div class="workspace-grid">
@@ -83,12 +121,16 @@
       </div>
     </section>
     <section class="examples" aria-labelledby="examples-title"><div class="examples-heading"><div><p class="eyebrow">TAKE IT FOR A SPIN</p><h2 id="examples-title">Small phrases. Big differences.</h2></div><p>Three cultures. Three everyday moments.</p></div><div id="examples" class="example-grid"></div></section>
-    <section id="how-it-works" class="idea-section"><div><p class="eyebrow">THE IDEA BEHIND THE BRIDGE</p><h2>Translation is personal.<br><em>Let’s keep it that way.</em></h2></div><div class="idea-copy"><p>A literal translation can get the words right and the conversation wrong. NuanceBridge considers who you’re speaking to, where you’re speaking, and the feeling you want to carry across.</p><p>Explore the curated examples, or bring an OpenRouter key to translate your own messages. Your style preferences stay in this browser. You choose when to share them with the AI.</p><a href="https://github.com/Lee-arts-02/informal-translation-companion#readme" target="_blank" rel="noopener noreferrer">Read about the project <span aria-hidden="true">↗</span></a></div></section>
+    </details>
+    <section id="how-it-works" class="idea-section"><div><p class="eyebrow">THE IDEA BEHIND THE BRIDGE</p><h2>Clearer writing.<br><em>Still unmistakably you.</em></h2></div><div class="idea-copy"><p>Fluent writing should leave room for your intention, your cultural expressions, and your own way of speaking. NuanceBridge offers focused suggestions, explains their tradeoffs, and lets you accept, edit, or reject each one.</p><p>Protect the words that matter. Reflect on possible reader interpretations. Invite a trusted human perspective. Your decisions guide the next round within this writing session; saving a longer-term preference is always your choice.</p><a href="https://github.com/Lee-arts-02/informal-translation-companion#readme" target="_blank" rel="noopener noreferrer">Read about the project <span aria-hidden="true">↗</span></a></div></section>
   </main>
   <footer><a class="brand" href="./">NuanceBridge.</a><p>An independent portfolio project, inspired by an IBM SkillsBuild prototype.<br>Not affiliated with IBM. Built for human connection.</p><span class="mono">MEANING &gt; WORDS</span></footer>
   <dialog id="settings" aria-labelledby="settings-title"><form id="settings-form"><div class="dialog-heading"><h2 id="settings-title">Your live connection</h2><button type="button" class="close-button" data-close="settings" aria-label="Close settings">×</button></div><p class="dialog-copy">Connect your own OpenRouter account. Your key stays in this tab’s memory and is cleared on reload.</p><label for="api-key">OpenRouter API key</label><input id="api-key" type="password" autocomplete="off" spellcheck="false" placeholder="Paste your key for this session"><label for="model">Model ID</label><input id="model" maxlength="150" required spellcheck="false" value="openrouter/auto"><p class="help">Auto routes to an available model; pricing varies. You can enter a specific model ID instead.</p><div class="privacy-note">Live requests send your text, context, and enabled style preferences to OpenRouter and its selected provider. Requests may cost money. Use a separate key with a low credit limit; browser extensions may access credentials entered here.</div><a href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener noreferrer">Create a limited OpenRouter key ↗</a><div class="dialog-actions"><button type="button" id="disconnect" class="button outline">Forget key</button><button class="button primary" type="submit">Save settings</button></div><p id="connection-note" class="help" role="status"></p></form></dialog>
   <dialog id="profile" aria-labelledby="profile-title"><div class="dialog-heading"><h2 id="profile-title">A voice that’s yours</h2><button class="close-button" data-close="profile" aria-label="Close style profile">×</button></div><p class="dialog-copy">Add the habits that make a message sound like you. Saved on this browser, used only when your style is enabled in live mode.</p><ul id="traits" class="traits"></ul><form id="trait-form"><label for="new-trait">A style preference</label><input id="new-trait" maxlength="200" required placeholder="e.g. Use British English, avoid slang"><button class="button primary" type="submit">Add preference +</button></form><p class="help">Up to 12 preferences, 200 characters each. No automatic learning.</p><button id="reset-profile" class="text-button">Clear all preferences</button><p id="profile-status" role="status" class="help"></p></dialog>
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <dialog id="starting-preview" aria-labelledby="starting-title"><div class="dialog-heading"><h2 id="starting-title">A starting point, your choice</h2><button class="close-button" data-close="starting-preview" aria-label="Close starting draft">×</button></div><p class="dialog-copy">This replaces the whole working draft only if you accept it. Your original and undo history remain available. Protected expressions must stay intact.</p><p id="starting-preview-text" class="preview-text" dir="auto"></p><button id="accept-starting" class="button primary">Use this starting draft</button></dialog>
+  <dialog id="peer-dialog" aria-labelledby="peer-title"><div class="dialog-heading"><h2 id="peer-title">Another human perspective</h2><button class="close-button" data-close="peer-dialog" aria-label="Close human feedback">×</button></div><p class="dialog-copy">Download a review copy and send it to someone you trust. It includes your draft, intention, and protected expressions. Share only what you are comfortable disclosing. This is a manual exchange, not a live collaboration room.</p><button id="download-peer" class="button outline">Download review copy</button><label for="peer-notes">Paste their feedback here</label><textarea id="peer-notes" maxlength="1000" rows="4" placeholder="e.g. My classmate says the ending sounds a little distant."></textarea><button id="save-peer" class="button primary">Use this feedback in this session</button><p class="help">Their feedback guides future suggestions; it never changes your draft automatically.</p></dialog>
+  <dialog id="voice-dialog" aria-labelledby="voice-title"><div class="dialog-heading"><h2 id="voice-title">Your voice, over time</h2><button class="close-button" data-close="voice-dialog" aria-label="Close voice profile">×</button></div><p class="dialog-copy">Save a short example only if you want it remembered on this browser. Live writing requests include it only when “Use my saved voice” is checked. Drafts and session feedback are not automatically saved.</p><label class="check-label"><input id="use-voice" type="checkbox" checked>Use my saved voice and style preferences</label><label for="voice-sample">An example that sounds like you (up to 1,000 characters)</label><textarea id="voice-sample" maxlength="1000" rows="4"></textarea><div class="dialog-actions"><button id="clear-voice" class="button outline">Forget example</button><button id="save-voice" class="button primary">Save example on this browser</button></div><button id="edit-style-from-writing" class="text-button">Edit my explicit style preferences ↗</button><p id="voice-status" class="help" role="status"></p></dialog>
   <noscript><p class="error">Enable JavaScript to use the translation companion.</p></noscript>
 </body>
 </html>

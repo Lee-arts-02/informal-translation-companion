@@ -39,9 +39,12 @@ export function parseResult(content) {
   } };
 }
 
-export async function translate(input, { apiKey, model, signal, fetcher = fetch, timeoutMs = 60000 }) {
+export async function translate(input, options) {
+  return parseResult(await requestCompletion(buildRequest(input, options.model), options));
+}
+
+export async function requestCompletion(body, { apiKey, signal, fetcher = fetch, timeoutMs = 60000 }) {
   if (typeof apiKey !== 'string' || !apiKey.trim()) throw new Error('Add your OpenRouter API key in settings first.');
-  const body = buildRequest(input, model);
   const controller = new AbortController();
   let timedOut = false;
   const cancel = () => controller.abort();
@@ -66,7 +69,9 @@ export async function translate(input, { apiKey, model, signal, fetcher = fetch,
     try { data = await response.json(); }
     catch { throw new Error('The provider returned an invalid response. Please try again.'); }
     if (data.error) throw new Error('The AI provider could not complete the request. Try another model.');
-    return parseResult(data.choices?.[0]?.message?.content);
+    const content = data.choices?.[0]?.message?.content;
+    if (typeof content !== 'string') throw new Error('The provider returned an invalid response. Please try again.');
+    return content;
   } catch (error) {
     if (timedOut) throw new Error('Translation timed out. Please try again or select a faster model.');
     if (controller.signal.aborted) throw new Error('Translation cancelled.');

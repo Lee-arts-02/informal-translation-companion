@@ -17,6 +17,7 @@ def run():
         page.on("request", lambda request: requests.append(request.url))
         page.goto(os.environ.get("TEST_URL", "http://127.0.0.1:8000"))
         page.wait_for_load_state("networkidle")
+        page.locator("#translation-tool > summary").click()
         expect(page.locator("#result-badge")).to_have_text("CURATED DEMO")
         expect(page.locator("#translation")).to_contain_text("something special")
         assert not any("openrouter.ai" in url for url in requests)

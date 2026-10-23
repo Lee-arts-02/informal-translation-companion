@@ -1,91 +1,117 @@
 # NuanceBridge
 
-**Meaning, carried across.** A personal translation companion that considers
-tone, culture, recipient, and communication channel alongside the words.
+**Your words. Your choices.** A multilingual writing companion for students who
+want clearer writing while keeping their intended meaning, personal voice, and
+cultural expression.
 
-[Open the companion](https://lee-arts-02.github.io/informal-translation-companion/)
+[Open on Vercel](https://nuancebridge.vercel.app/)
+· [Open on GitHub Pages](https://lee-arts-02.github.io/informal-translation-companion/)
 · [Deployment runs](https://github.com/Lee-arts-02/informal-translation-companion/actions)
 
-![NuanceBridge desktop interface](preview/desktop.png)
+![Writing companion desktop](preview/writing-desktop.png)
 
-## Try it
+## Write with control
 
-The site opens in **Explore the demo**, with three curated Urdu, Spanish, and
-French scenarios. Switch between natural, casual, direct, and formal phrasing
-and read the explanation of each cultural choice. These are authored examples,
-clearly labeled; they do not call an AI service. Demo inputs are fixed so a
-curated result cannot be mistaken for a translation of newly entered text.
+1. Explore the **Guided demo**, or choose **Write my own**. **New draft** starts a
+   fresh session; switching to live mode keeps the current draft so you can continue.
+2. Describe your intention, what you want to avoid, your reader, and your relationship.
+3. Write in English, another language, or a mixture (up to 6,000 characters).
+4. Select an expression and click **Keep selected words**. The app protects that
+   occurrence from AI replacements and manual edits. Click its chip to unprotect it.
+5. Choose light edits, grammar only, selected passage only, or expressive local
+   alternatives. Choose the language in which explanations should appear.
+6. Ask for focused suggestions. Review the original passage, replacement, reason,
+   tradeoff, and possible reader impression. **Nothing changes automatically.**
+7. Accept, edit the replacement before applying it, or reject. Optional feedback
+   such as “Too formal” guides subsequent live reviews in this session.
+8. Compare with the original, undo, check meaning and reader perspective, or
+   back-translate for reflection. Copy or explicitly download your finished draft.
 
-To translate your own text:
+For a draft in another language, **Create a starting draft** offers a complete
+draft in the chosen writing language. You must review and explicitly accept it;
+protected expressions remain unchanged and undo remains available.
 
-1. Open **API settings** and enter an [OpenRouter API key](https://openrouter.ai/settings/keys).
-   Use a separate key with a low credit limit.
-2. Keep `openrouter/auto` or specify a model ID from the
-   [OpenRouter model catalog](https://openrouter.ai/models). Auto routing is not
-   guaranteed to be free; charges depend on the selected model.
-3. Select **Translate your own**, enter up to 6,000 characters, and choose the
-   languages, recipient, channel, and tone.
-4. Optionally enable **Make it sound like me** and edit your style preferences.
-5. Translate, review the output, and copy the register you prefer. Ctrl+Enter
-   (Cmd+Enter on macOS) also submits from the text box.
+## Demo and personal live mode
 
-No key is included in this repository. No shared AI account is provided to
-portfolio visitors. A saved session key is not verified until a request succeeds.
+The writing demo has three authored scenarios: Chinese/English appreciation,
+setting a boundary, and an Urdu idiom. Try protection, selective acceptance,
+rejection, undo, Chinese explanations, starting-draft preview, and reflection without
+an API key. The examples are labeled curated and make no AI requests. Demo results
+are limited to known example wording, English writing, English/Simplified Chinese
+explanations, and a Simplified Chinese
+back-translation. Other wording/languages require live mode; no fake generation occurs.
 
-Live mode offers 28 language choices in both directions, including **Chinese
-(Simplified)**, **Chinese (Traditional)**, and **Cantonese (Traditional)**.
-Other choices include Arabic, Bengali, Dutch, English, French, German, Greek,
-Hebrew, Hindi, Indonesian, Italian, Japanese, Korean, Malay, Persian, Polish,
-Portuguese, Russian, Spanish, Tamil, Thai, Turkish, Ukrainian, Urdu, and Vietnamese.
-The source language can also be auto-detected. Translation quality and dialect
-coverage depend on the selected AI model. Demo mode keeps its three fixed examples.
+For live writing or translation, open **API settings** and enter your own
+[OpenRouter key](https://openrouter.ai/settings/keys). Use a separate key with a low
+credit limit. `openrouter/auto` routes to a model; it is not guaranteed free. You
+can instead enter a specific ID from the [model catalog](https://openrouter.ai/models).
+Models differ in language quality, cultural knowledge, cost, and reliability.
 
-## Run locally
+No shared or owner-funded API account is provided to visitors. Your session key is
+not verified until a request succeeds. Ctrl+Enter / Cmd+Enter in either draft box
+requests guidance or translation.
 
-Serve the directory over HTTP (ES modules do not work reliably via `file://`):
+## Voice and human perspectives
+
+**My voice profile** lets you explicitly save a short writing example on this
+browser, forget it, and enable/disable inclusion of the example and saved style
+preferences in live writing requests. There is no automatic long-term learning.
+
+**Invite a human perspective** downloads a text review copy containing your
+draft, intention, things to avoid, and protected expressions. Send it yourself to
+someone you trust, then paste their feedback into the app. Feedback informs the
+next live review but never edits your draft by itself. This is a manual exchange,
+not a live collaboration room, account system, or public community.
+
+## Quick translation remains available
+
+Expand **Need a quick translation?** for the original translator, its three curated
+scenarios, register choices, and context controls. Live translation and the writing
+target menu offer 28 choices, including Simplified Chinese, Traditional Chinese,
+Cantonese (Traditional), English, Urdu, Spanish, French, Arabic, Bengali, Dutch,
+German, Greek, Hebrew, Hindi, Indonesian, Italian, Japanese, Korean, Malay, Persian,
+Polish, Portuguese, Russian, Tamil, Thai, Turkish, Ukrainian, and Vietnamese.
+
+## Run and deploy
+
+No runtime dependencies, CDN scripts, build step, external fonts, or analytics.
+Serve the folder over HTTP; ES modules need an HTTP server:
 
 ```sh
 python -m http.server 8000 --bind 127.0.0.1
 ```
 
-Open `http://127.0.0.1:8000`. No npm install or build is needed to run the app.
-Production deployment uses HTTPS through GitHub Pages.
+For Vercel, import this repository, choose the repository root, set Framework
+Preset to **Other**, leave Build Command empty, and set Output Directory to `.`.
+No deployment environment variables or API key are required for this personal-key app.
 
-## Deploy on GitHub Pages
-
-1. In this repository, open **Settings → Pages**.
-2. Under **Build and deployment → Source**, select **GitHub Actions**.
-3. Open **Actions → Verify and deploy NuanceBridge**. Run the workflow, or push
-   a commit to `main`.
-4. The workflow checks syntax, runs unit tests, packages only the seven public
-   app files, and deploys them. The deployment reports the website URL.
-
-The intended URL is
-`https://lee-arts-02.github.io/informal-translation-companion/`.
-It becomes available after Pages is enabled and the deployment succeeds.
-No API key or Actions secret is required for deployment. Never put a personal
-provider key in GitHub source, Actions variables, or a generated static bundle.
+For GitHub Pages, choose **Settings → Pages → Source → GitHub Actions**. The
+workflow verifies syntax and unit tests and publishes only an explicit app-file
+allowlist. The original prototype, tests, plans, and previews are excluded.
 
 ## Privacy and boundaries
 
-- The key is held in tab memory only. Reload, **Forget key**, or navigating away
-  clears it. The app does not write it to localStorage, sessionStorage, URLs,
-  analytics, or logs. Browser extensions and developer tools can still access
-  browser-entered credentials; a browser-only app is not a secret vault.
-- Live requests send source text, selected context, and enabled preferences
-  directly to OpenRouter and its selected model provider. Their privacy and
-  retention policies apply. Cancelling stops this app's request; it may not stop
-  provider processing or charges already incurred.
-- Only explicit style preferences, the model ID, and the style toggle persist
-  locally. Source text and translation history are not saved by the app.
-- Demo mode makes no AI requests. There are no analytics, runtime third-party
-  scripts, CDN stylesheets, or external font requests.
-- AI may misinterpret idioms or change meaning. Review outputs before sharing.
-  This project is not a certified translation service.
-- There is no automatic learning or IBM Bob integration. This independent
-  portfolio project was inspired by an IBM SkillsBuild HTML prototype and is
-  not affiliated with or endorsed by IBM. The original file is retained as a
-  reference and is excluded from the deployed site.
+- API keys exist in tab memory only; reload, navigation, or **Forget key** clears
+  them. The app does not put them in storage, URLs, source, exports, or logs.
+  Browser extensions/developer tools may still access browser-entered credentials.
+- Live requests send the draft, original, context, protected expressions, session
+  feedback, and enabled voice preferences/example to OpenRouter and its selected
+  provider. Provider retention/privacy policies apply. Cancellation cannot undo
+  charges for provider work already processed.
+- Drafts, protected spans, the last 40 undo snapshots, and the last 20 session
+  decisions stay in memory and disappear on reload. There is no automatic cloud save.
+- Only explicit style preferences, the model ID, toggles, and an explicitly saved
+  voice example persist locally. A downloaded draft/review file is an intentional
+  export. Consider what you disclose before sharing it with a peer.
+- AI reader impressions are possibilities, not facts about cultures or people.
+  Back-translation is a reflection tool, not an accuracy certificate.
+- Local code verifies exact text spans, revision IDs, and protected expressions
+  before applying model edits. Overlapping/unsafe/malformed responses are rejected.
+  Human review is still necessary for meaning and factual accuracy.
+- This independent portfolio project is inspired by an IBM SkillsBuild prototype;
+  it is not affiliated with IBM. IBM Bob can support development, but there is no
+  claimed Bob runtime integration. Interview notes informed design hypotheses;
+  this prototype does not claim validated research outcomes.
 
 ## Verify
 
@@ -96,39 +122,34 @@ npm run check
 npm test
 ```
 
-Unit tests use controlled HTTP responses, with no paid API calls. They cover
-request context, input limits, structured output validation, provider errors,
-timeouts, cancellation, storage failures, and exclusion of credentials and
-translation text from saved preferences.
+Tests cover the translation API, safe preference persistence, selective edits,
+repeated text and emoji offsets, protected expressions, stale suggestions, undo,
+feedback, starting drafts, selection boundaries, and honest demo limitations.
+They use controlled API responses and incur no model charges.
 
-The optional browser check requires Python and Playwright:
+Optional full browser workflow check:
 
 ```sh
-python -m pip install playwright
-python -m playwright install chromium
-# With the local server running in another terminal:
-python tests/browser_smoke.py
+npm install --no-save --package-lock=false playwright
+npx playwright install chromium
+node tests/writing-browser.cjs
 ```
 
-Browser checks exercise demo/live transitions, preference persistence, safe
-rendering, a controlled live response, API errors, session key clearing, and
-mobile layout. Paid live translation quality is not verified by these tests.
-
-Local verification: JavaScript syntax checks and all 11 unit tests passed.
-Equivalent headless Chromium smoke checks passed at desktop, 390px, and 320px
-widths with controlled API responses. No paid provider request was made.
+Set `TEST_URL` to check a deployed site, and optionally `CHROMIUM_EXECUTABLE` to
+use an existing Chromium installation. The check writes desktop/mobile captures
+under `preview/`. Paid model quality is not verified by automated checks.
 
 ## Structure
 
 | File | Responsibility |
 | --- | --- |
-| `index.html`, `styles.css` | Accessible, responsive interface |
-| `app.js` | Mode transitions, controls, session credentials, and rendering |
-| `translation.js` | Prompt construction, provider requests, validation, and errors |
-| `preferences.js` | Allowlisted non-secret local preferences |
-| `demo.js` | Authored portfolio scenarios |
-| `tests/` | Unit and optional browser checks |
-| `.github/workflows/pages.yml` | Verification and deployment |
+| `index.html`, `styles.css`, `writing.css` | Responsive writing and translation UI |
+| `writing-session.js` | Versioned draft, protected spans, safe patches, feedback, undo |
+| `review-api.js` | Structured review, starting drafts, reflection, back-translation |
+| `writing-ui.js`, `writing-demo.js` | Writing interaction and authored examples |
+| `app.js`, `demo.js` | Original translator and shared connection settings |
+| `translation.js` | Translation and shared provider transport |
+| `preferences.js` | Allowlisted translator/style preferences |
+| `tests/` | Unit and browser checks |
 
-Design decisions and the implementation checklist are in
-[`plan/translation-companion-design.md`](plan/translation-companion-design.md).
+Implementation scope: [`plan/writing-companion.md`](plan/writing-companion.md).

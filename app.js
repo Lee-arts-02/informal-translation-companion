@@ -1,6 +1,7 @@
 import { translate } from './translation.js';
 import { loadPreferences, savePreferences } from './preferences.js';
 import { demos } from './demo.js';
+import { initWriting } from './writing-ui.js';
 
 const $ = id => document.getElementById(id);
 let storage;
@@ -24,6 +25,7 @@ function notify(message) {
 
 function persist() {
   if (!savePreferences(storage, preferences)) notify('Browser storage is unavailable. Preferences will last only for this visit.');
+  window.dispatchEvent(new Event('nuancebridge:settings'));
 }
 
 function updateCount() {
@@ -203,7 +205,7 @@ $('settings-form').addEventListener('submit', event => {
   notify(apiKey ? 'Settings saved. Key set for this visit; not yet verified.' : 'Model saved. Add a key to use live mode.');
 });
 $('model').addEventListener('input', () => $('model').setCustomValidity(''));
-$('disconnect').addEventListener('click', () => { cancelPending(); apiKey = ''; $('api-key').value = ''; $('connection-note').textContent = 'Key forgotten.'; setMode(mode); });
+$('disconnect').addEventListener('click', () => { cancelPending(); apiKey = ''; $('api-key').value = ''; $('connection-note').textContent = 'Key forgotten.'; setMode(mode); window.dispatchEvent(new Event('nuancebridge:settings')); });
 $('settings').addEventListener('close', () => { $('api-key').value = ''; });
 $('open-profile').addEventListener('click', () => { renderTraits(); $('profile-status').textContent = ''; $('profile').showModal(); });
 $('trait-form').addEventListener('submit', event => {
@@ -226,3 +228,4 @@ window.addEventListener('pagehide', () => { apiKey = ''; $('api-key').value = ''
 window.addEventListener('pageshow', event => { if (event.persisted) setMode(mode); });
 $('model').value = preferences.model;
 setMode('demo');
+initWriting({ getConnection: () => ({ apiKey, model: preferences.model }), getPreferences: () => preferences, notify });
