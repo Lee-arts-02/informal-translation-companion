@@ -35,7 +35,7 @@ Peer review is explicit file/text exchange, not a falsely advertised cloud room.
   and keep the original translator as a secondary tool.
 - [x] Update documentation, deployment allowlist and previews. Run unit and
   browser checks, independent code review, resolve findings.
-- [ ] Commit and deploy; verify the deployed writing workflow.
+- [x] Commit and deploy; verify the deployed writing workflow.
 
 ## Review focus
 
@@ -67,3 +67,7 @@ will be made without a user key; controlled responses verify integration.
   accounts and synchronous cloud collaboration are not required for this model.
   Human collaboration is implemented as explicit review-file exchange and pasted
   feedback, honestly labeled in the UI. No automatic cloud storage is introduced.
+- Published implementation commit: `c9ebdb3`. Vercel reports success; the full
+  headless browser workflow passes against `https://nuancebridge.vercel.app/`.
+  GitHub Pages verification and deployment jobs also passed. No paid model call
+  was made; live API integration uses controlled test responses.
