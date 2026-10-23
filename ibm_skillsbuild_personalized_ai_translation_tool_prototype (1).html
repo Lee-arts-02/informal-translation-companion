@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IBM SkillsBuild - Personalised AI Translation Tool</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Inter Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"IBM Plex Sans"', 'sans-serif'],
+            mono: ['"IBM Plex Mono"', 'monospace'],
+          },
+          colors: {
+            ibm: {
+              blue: '#0f62fe',
+              'blue-hover': '#0353e9',
+              dark: '#161616',
+              gray: '#262626',
+              border: '#393939',
+              lightGray: '#f4f4f4',
+              cyan: '#1192e8',
+              purple: '#8a3ffc',
+              teal: '#009d9a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom Carbon Glass & Glow Effects */
+    .carbon-card {
+      background: rgba(38, 38, 38, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .carbon-card-active {
+      border-color: #0f62fe;
+      box-shadow: 0 0 15px rgba(15, 98, 254, 0.2);
+    }
+    .pulse-glow {
+      box-shadow: 0 0 20px rgba(138, 63, 252, 0.4);
+    }
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #161616;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #393939;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #525252;
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col font-sans antialiased text-slate-200 bg-[#121212] selection:bg-ibm-blue selection:text-white">
+
+  <!-- Top Header Navigation -->
+  <header class="bg-ibm-dark border-b border-ibm-border px-6 py-3 flex items-center justify-between sticky top-0 z-50">
+    <div class="flex items-center space-x-4">
+      <div class="flex items-center space-x-2">
+        <span class="bg-ibm-blue text-white font-mono font-bold px-2 py-0.5 text-sm rounded-sm">IBM</span>
+        <span class="text-sm font-medium text-slate-300">SkillsBuild <span class="text-xs text-slate-500 font-normal">| AI Prototype</span></span>
+      </div>
+      <span class="text-slate-600">/</span>
+      <h1 class="text-sm font-semibold tracking-wide text-white flex items-center gap-2">
+        <i class="fa-solid font-mono text-ibm-teal fa-language"></i> NuanceBridge Personalised Translator
+      </h1>
+    </div>
+
+    <!-- Agent Status Indicator & Header Controls -->
+    <div class="flex items-center space-x-6 text-xs">
+      <div class="flex items-center space-x-2 bg-slate-900 border border-ibm-border px-3 py-1.5 rounded-full">
+        <span class="relative flex h-2.5 w-2.5">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+        </span>
+        <span class="font-mono text-slate-300">Agent: <strong class="text-emerald-400">IBM Bob Active</strong></span>
+      </div>
+      
+      <button id="toggle-memory-drawer" class="flex items-center gap-2 text-slate-300 hover:text-white transition-colors border border-ibm-border hover:border-ibm-blue px-3 py-1.5 rounded-md bg-ibm-gray">
+        <i class="fa-solid fa-brain text-ibm-purple"></i>
+        <span>Style Profile Memory</span>
+        <span id="memory-count-badge" class="bg-ibm-purple text-white px-1.5 py-0.2 text-[10px] rounded-full font-bold">4</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 overflow-y-auto">
+    
+    <!-- Left Column: Input & Context Controls (7 cols) -->
+    <section class="lg:col-span-7 flex flex-col space-y-5">
+      
+      <!-- Sample Presets Banner -->
+      <div class="carbon-card p-3 rounded-lg border border-ibm-border flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div class="flex items-center space-x-2 text-xs text-slate-400">
+          <i class="fa-solid fa-wand-magic-sparkles text-ibm-cyan"></i>
+          <span>Quick Scenario Presets:</span>
+        </div>
+        <div class="flex flex-wrap gap-2 text-xs">
+          <button onclick="loadPreset('urdu')" class="px-2.5 py-1 bg-slate-800 hover:bg-ibm-blue/20 hover:border-ibm-blue border border-ibm-border text-slate-300 hover:text-white rounded transition-all">
+            🇵🇰 Urdu Idiom to Friend
+          </button>
+          <button onclick="loadPreset('spanish')" class="px-2.5 py-1 bg-slate-800 hover:bg-ibm-blue/20 hover:border-ibm-blue border border-ibm-border text-slate-300 hover:text-white rounded transition-all">
+            🇪🇸 Spanish Workplace Humor
+          </button>
+          <button onclick="loadPreset('french')" class="px-2.5 py-1 bg-slate-800 hover:bg-ibm-blue/20 hover:border-ibm-blue border border-ibm-border text-slate-300 hover:text-white rounded transition-all">
+            🇫🇷 Formal Nuanced Request
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Input Box -->
+      <div class="carbon-card p-5 rounded-lg border border-ibm-border flex flex-col space-y-4">
+        <div class="flex justify-between items-center">
+          <label for="source-text" class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+            <i class="fa-solid fa-pen-nib text-ibm-blue"></i> Source Native Phrase / Thought
+          </label>
+          <div class="flex items-center space-x-2 text-xs">
+            <span class="text-slate-500">Source Lang:</span>
+            <select id="source-lang" class="bg-ibm-gray border border-ibm-border text-slate-200 text-xs rounded px-2 py-1 focus:outline-none focus:border-ibm-blue">
+              <option value="auto">Auto-Detect Nuance</option>
+              <option value="urdu">Urdu</option>
+              <option value="spanish">Spanish</option>
+              <option value="french">French</option>
+              <option value="hindi">Hindi</option>
+              <option value="arabic">Arabic</option>
+              <option value="mandarin">Mandarin</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="relative">
+          <textarea id="source-text" rows="4" 
+            class="w-full bg-slate-900/90 text-slate-100 placeholder-slate-500 p-3.5 rounded border border-ibm-border focus:border-ibm-blue focus:ring-1 focus:ring-ibm-blue focus:outline-none transition-all font-sans text-sm resize-none"
+            placeholder="Enter phrase in native language or literal English draft... (e.g., 'Aapne toh char chand laga diye!')"></textarea>
+          
+          <button onclick="clearInput()" class="absolute top-2.5 right-2.5 text-slate-500 hover:text-slate-300 text-xs px-2 py-1 rounded">
+            <i class="fa-solid fa-xmark"></i> Clear
+          </button>
+        </div>
+
+        <!-- Dynamic Context Modifiers -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-ibm-border/60">
+          
+          <!-- Recipient Selection -->
+          <div class="space-y-1.5">
+            <label class="text-xs font-medium text-slate-300 flex items-center gap-1.5">
+              <i class="fa-solid fa-user-group text-ibm-cyan"></i> Target Recipient
+            </label>
+            <select id="context-recipient" class="w-full bg-ibm-gray border border-ibm-border text-slate-200 text-xs rounded p-2.5 focus:border-ibm-blue focus:outline-none">
+              <option value="peer">Close Peer / College Friend</option>
+              <option value="boss">Professor / Project Supervisor / Boss</option>
+              <option value="support">Immigrant / Peer Support Group</option>
+              <option value="casual">Casual Group Chat / Discord</option>
+              <option value="client">External Client / Official Body</option>
+            </select>
+          </div>
+
+          <!-- Channel Selection -->
+          <div class="space-y-1.5">
+            <label class="text-xs font-medium text-slate-300 flex items-center gap-1.5">
+              <i class="fa-solid fa-paper-plane text-ibm-purple"></i> Communication Channel
+            </label>
+            <div class="grid grid-cols-3 gap-1 bg-ibm-gray p-1 rounded border border-ibm-border text-xs">
+              <button type="button" onclick="setChannel('text')" id="btn-chan-text" class="channel-btn py-1 px-2 text-center rounded bg-ibm-blue text-white font-medium">Chat/Text</button>
+              <button type="button" onclick="setChannel('email')" id="btn-chan-email" class="channel-btn py-1 px-2 text-center text-slate-400 hover:text-slate-200">Email</button>
+              <button type="button" onclick="setChannel('forum')" id="btn-chan-forum" class="channel-btn py-1 px-2 text-center text-slate-400 hover:text-slate-200">Forum</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tone & Mood Selectors -->
+        <div class="space-y-2 pt-2">
+          <label class="text-xs font-medium text-slate-300 flex items-center justify-between">
+            <span class="flex items-center gap-1.5"><i class="fa-solid fa-icons text-ibm-teal"></i> Desired Tone & Expression</span>
+            <span id="selected-tone-label" class="text-ibm-cyan text-[11px] font-mono">Humorous & Playful</span>
+          </label>
+          <div class="flex flex-wrap gap-2" id="tone-pills">
+            <button onclick="selectTone('Humorous', this)" class="tone-pill px-3 py-1 rounded-full border border-ibm-blue bg-ibm-blue/20 text-ibm-cyan text-xs font-medium transition-all">😄 Humorous</button>
+            <button onclick="selectTone('Sarcastic', this)" class="tone-pill px-3 py-1 rounded-full border border-ibm-border bg-slate-800 text-slate-400 hover:border-slate-500 text-xs transition-all">😏 Sarcastic / Dry</button>
+            <button onclick="selectTone('Formal', this)" class="tone-pill px-3 py-1 rounded-full border border-ibm-border bg-slate-800 text-slate-400 hover:border-slate-500 text-xs transition-all">💼 Formal & Polished</button>
+            <button onclick="selectTone('Empathetic', this)" class="tone-pill px-3 py-1 rounded-full border border-ibm-border bg-slate-800 text-slate-400 hover:border-slate-500 text-xs transition-all">🤝 Empathetic</button>
+            <button onclick="selectTone('Direct', this)" class="tone-pill px-3 py-1 rounded-full border border-ibm-border bg-slate-800 text-slate-400 hover:border-slate-500 text-xs transition-all">⚡ Concise & Direct</button>
+          </div>
+        </div>
+
+        <!-- Personal Memory Toggle Switch -->
+        <div class="flex items-center justify-between p-3 bg-ibm-gray/60 border border-ibm-border rounded-md mt-2">
+          <div class="flex items-center space-x-3">
+            <div class="p-2 bg-ibm-purple/20 text-ibm-purple rounded">
+              <i class="fa-solid fa-brain text-sm"></i>
+            </div>
+            <div>
+              <div class="text-xs font-semibold text-slate-200">Apply Personal Voice & Style Profile</div>
+              <div class="text-[11px] text-slate-400">Pulls from IBM Bob memory to match your typical conversational habits</div>
+            </div>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="toggle-memory" class="sr-only peer" checked>
+            <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-ibm-blue"></div>
+          </label>
+        </div>
+
+        <!-- Action Trigger Button -->
+        <button id="translate-btn" onclick="triggerTranslation()" class="w-full mt-2 py-3 px-4 bg-ibm-blue hover:bg-ibm-blue-hover text-white font-medium rounded text-sm flex items-center justify-center space-x-2 transition-all shadow-lg hover:shadow-ibm-blue/30 active:scale-[0.99]">
+          <i class="fa-solid fa-robot font-mono"></i>
+          <span>Translate with IBM Bob Agent</span>
+        </button>
+
+      </div>
+    </section>
+
+    <!-- Right Column: Naturalized Output & Nuance Insights (5 cols) -->
+    <section class="lg:col-span-5 flex flex-col space-y-5">
+      
+      <!-- Output Card -->
+      <div class="carbon-card p-5 rounded-lg border border-ibm-border flex flex-col space-y-4 min-h-[420px] relative">
+        
+        <!-- Loading State Overlay -->
+        <div id="loading-overlay" class="hidden absolute inset-0 bg-ibm-dark/90 backdrop-blur-md z-20 rounded-lg flex flex-col items-center justify-center space-y-3 p-6 text-center">
+          <div class="relative w-12 h-12">
+            <div class="absolute top-0 left-0 w-full h-full border-4 border-ibm-blue/20 rounded-full"></div>
+            <div class="absolute top-0 left-0 w-full h-full border-4 border-ibm-blue rounded-full border-t-transparent animate-spin"></div>
+            <i class="fa-solid fa-brain text-ibm-cyan absolute inset-0 flex items-center justify-center text-xs"></i>
+          </div>
+          <div class="space-y-1">
+            <h4 class="text-sm font-semibold text-white">IBM Bob Analyzing Cultural Context...</h4>
+            <p class="text-xs text-slate-400 font-mono" id="loading-step">Mapping idiom structure & target register</p>
+          </div>
+        </div>
+
+        <!-- Header Controls for Output -->
+        <div class="flex items-center justify-between border-b border-ibm-border pb-3">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+            <i class="fa-solid fa-sparkles text-ibm-teal"></i> Naturalized English Output
+          </span>
+          <button onclick="copyOutput()" id="copy-btn" class="text-xs text-slate-400 hover:text-white flex items-center gap-1.5 px-2 py-1 rounded bg-slate-800 border border-ibm-border hover:border-slate-500 transition-all">
+            <i class="fa-regular fa-copy"></i>
+            <span>Copy Text</span>
+          </button>
+        </div>
+
+        <!-- Output Display Area -->
+        <div class="bg-slate-900/80 rounded border border-ibm-border/80 p-4 min-h-[100px] relative flex flex-col justify-between">
+          <p id="output-text" class="text-slate-100 text-sm leading-relaxed font-sans font-normal">
+            "You really brought the magic today! You took this project to a whole new level."
+          </p>
+          <div class="flex items-center justify-between mt-3 pt-2 border-t border-slate-800 text-[11px] text-slate-400 font-mono">
+            <span>Tone: <strong id="out-tone-tag" class="text-ibm-cyan">Humorous / Expressive</strong></span>
+            <span>Style Confidence: <strong class="text-emerald-400">98% Match</strong></span>
+          </div>
+        </div>
+
+        <!-- Alternative Register Tabs -->
+        <div class="space-y-2">
+          <label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Alternative Registers</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button onclick="switchRegister('casual')" id="reg-casual" class="reg-tab p-2 text-left bg-ibm-gray hover:bg-slate-800 border border-ibm-blue rounded text-xs transition-all">
+              <div class="font-medium text-slate-200">More Casual</div>
+              <div id="reg-casual-preview" class="text-[10px] text-slate-400 truncate mt-0.5">"You totally crushed it..."</div>
+            </button>
+            <button onclick="switchRegister('direct')" id="reg-direct" class="reg-tab p-2 text-left bg-ibm-gray hover:bg-slate-800 border border-ibm-border rounded text-xs transition-all">
+              <div class="font-medium text-slate-200">Slightly Direct</div>
+              <div id="reg-direct-preview" class="text-[10px] text-slate-400 truncate mt-0.5">"Great job enhancing this."</div>
+            </button>
+            <button onclick="switchRegister('formal')" id="reg-formal" class="reg-tab p-2 text-left bg-ibm-gray hover:bg-slate-800 border border-ibm-border rounded text-xs transition-all">
+              <div class="font-medium text-slate-200">Polished / Exec</div>
+              <div id="reg-formal-preview" class="text-[10px] text-slate-400 truncate mt-0.5">"Your contributions greatly..."</div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Nuance Breakdown Cards -->
+        <div class="space-y-2 pt-2">
+          <label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+            <span>IBM Bob Nuance Analysis</span>
+            <span class="text-ibm-purple font-mono text-[10px]">Context Engine v2.4</span>
+          </label>
+
+          <div class="space-y-2 text-xs" id="nuance-cards-container">
+            
+            <!-- Card 1 -->
+            <div class="p-2.5 rounded bg-slate-900/60 border-l-2 border-ibm-blue border-r border-t border-b border-ibm-border flex items-start space-x-2.5">
+              <i class="fa-solid fa-language text-ibm-blue mt-0.5"></i>
+              <div>
+                <span class="font-semibold text-slate-200">Idiomatic Context Translation:</span>
+                <p id="nuance-idiom" class="text-slate-400 text-[11px] leading-snug mt-0.5">
+                  Translated literal Urdu "char chand laga diye" (added four moons) to natural English idiom "brought the magic / elevated this".
+                </p>
+              </div>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="p-2.5 rounded bg-slate-900/60 border-l-2 border-ibm-purple border-r border-t border-b border-ibm-border flex items-start space-x-2.5">
+              <i class="fa-solid fa-sliders text-ibm-purple mt-0.5"></i>
+              <div>
+                <span class="font-semibold text-slate-200">Audience & Mood Tuning:</span>
+                <p id="nuance-tone" class="text-slate-400 text-[11px] leading-snug mt-0.5">
+                  Target: College Peer. Maintained enthusiastic tone while avoiding stiff textbook phrasing.
+                </p>
+              </div>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="p-2.5 rounded bg-slate-900/60 border-l-2 border-ibm-teal border-r border-t border-b border-ibm-border flex items-start space-x-2.5">
+              <i class="fa-solid fa-user-gear text-ibm-teal mt-0.5"></i>
+              <div>
+                <span class="font-semibold text-slate-200">Personal Voice Match:</span>
+                <p id="nuance-memory" class="text-slate-400 text-[11px] leading-snug mt-0.5">
+                  Applied style tag: "Prefers warm, high-energy phrasing with conversational slang."
+                </p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Collapsible Personal Style Profile Drawer / Modal Overlay -->
+  <div id="memory-drawer" class="fixed inset-y-0 right-0 max-w-md w-full bg-ibm-dark border-l border-ibm-border shadow-2xl z-50 transform translate-x-full transition-transform duration-300 flex flex-col">
+    
+    <!-- Drawer Header -->
+    <div class="p-5 border-b border-ibm-border flex items-center justify-between bg-ibm-gray/50">
+      <div class="flex items-center space-x-2.5">
+        <div class="p-2 bg-ibm-purple/20 text-ibm-purple rounded">
+          <i class="fa-solid fa-brain text-lg"></i>
+        </div>
+        <div>
+          <h3 class="text-sm font-semibold text-white">Personal Style Profile</h3>
+          <p class="text-xs text-slate-400">IBM Bob Learned Communication Traits</p>
+        </div>
+      </div>
+      <button id="close-memory-drawer" class="text-slate-400 hover:text-white p-2 rounded">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+    </div>
+
+    <!-- Drawer Content -->
+    <div class="p-5 flex-1 overflow-y-auto space-y-5">
+      
+      <!-- Stats summary -->
+      <div class="grid grid-cols-2 gap-3 text-center">
+        <div class="p-3 bg-slate-900 rounded border border-ibm-border">
+          <div class="text-xl font-bold font-mono text-ibm-cyan">24</div>
+          <div class="text-[11px] text-slate-400">Phrases Analyzed</div>
+        </div>
+        <div class="p-3 bg-slate-900 rounded border border-ibm-border">
+          <div class="text-xl font-bold font-mono text-ibm-purple">4 Traits</div>
+          <div class="text-[11px] text-slate-400">Active Profile Traits</div>
+        </div>
+      </div>
+
+      <!-- Trait List -->
+      <div class="space-y-3">
+        <div class="flex items-center justify-between">
+          <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider">Learned Speaking Preferences</label>
+          <button onclick="addNewTraitPrompt()" class="text-xs text-ibm-blue hover:underline flex items-center gap-1">
+            <i class="fa-solid fa-plus text-[10px]"></i> Add Trait
+          </button>
+        </div>
+
+        <div class="space-y-2.5" id="traits-list">
+          <!-- Trait Item 1 -->
+          <div class="p-3 bg-slate-900 rounded border border-ibm-border flex items-start justify-between gap-2 group">
+            <div class="space-y-1">
+              <div class="flex items-center gap-2">
+                <span class="px-1.5 py-0.5 bg-ibm-blue/20 text-ibm-blue text-[10px] rounded font-mono">Humor</span>
+                <span class="text-xs font-medium text-slate-200">Self-deprecating & lighthearted</span>
+              </div>
+              <p class="text-[11px] text-slate-400">Prefers softening direct feedback using gentle humor in group chats.</p>
+            </div>
+            <button onclick="removeTrait(this)" class="text-slate-600 hover:text-rose-400 p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <i class="fa-solid fa-trash text-xs"></i>
+            </button>
+          </div>
+
+          <!-- Trait Item 2 -->
+          <div class="p-3 bg-slate-900 rounded border border-ibm-border flex items-start justify-between gap-2 group">
+            <div class="space-y-1">
+              <div class="flex items-center gap-2">
+                <span class="px-1.5 py-0.5 bg-ibm-purple/20 text-ibm-purple text-[10px] rounded font-mono">Tone</span>
+                <span class="text-xs font-medium text-slate-200">Energetic Sentence Openers</span>
+              </div>
+              <p class="text-[11px] text-slate-400">Frequently uses active verbs and encouraging expressions.</p>
+            </div>
+            <button onclick="removeTrait(this)" class="text-slate-600 hover:text-rose-400 p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <i class="fa-solid fa-trash text-xs"></i>
+            </button>
+          </div>
+
+          <!-- Trait Item 3 -->
+          <div class="p-3 bg-slate-900 rounded border border-ibm-border flex items-start justify-between gap-2 group">
+            <div class="space-y-1">
+              <div class="flex items-center gap-2">
+                <span class="px-1.5 py-0.5 bg-ibm-teal/20 text-ibm-teal text-[10px] rounded font-mono">Culture</span>
+                <span class="text-xs font-medium text-slate-200">Urdu / South Asian Idiomatic Mapping</span>
+              </div>
+              <p class="text-[11px] text-slate-400">Prefers translating emotional warmth from native metaphors rather than literal translations.</p>
+            </div>
+            <button onclick="removeTrait(this)" class="text-slate-600 hover:text-rose-400 p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <i class="fa-solid fa-trash text-xs"></i>
+            </button>
+          </div>
+
+          <!-- Trait Item 4 -->
+          <div class="p-3 bg-slate-900 rounded border border-ibm-border flex items-start justify-between gap-2 group">
+            <div class="space-y-1">
+              <div class="flex items-center gap-2">
+                <span class="px-1.5 py-0.5 bg-amber-500/20 text-amber-400 text-[10px] rounded font-mono">Format</span>
+                <span class="text-xs font-medium text-slate-200">Concise Chat Paragraphs</span>
+              </div>
+              <p class="text-[11px] text-slate-400">Keeps messages under 3 sentences for instant messaging channels.</p>
+            </div>
+            <button onclick="removeTrait(this)" class="text-slate-600 hover:text-rose-400 p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <i class="fa-solid fa-trash text-xs"></i>
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Memory Privacy Control -->
+      <div class="p-3 bg-ibm-gray/40 rounded border border-ibm-border space-y-2">
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-slate-300 font-medium">Auto-Update Profile Memory</span>
+          <input type="checkbox" checked class="accent-ibm-blue">
+        </div>
+        <p class="text-[11px] text-slate-500">
+          IBM Bob updates this profile based on outputs you accept or tweak in real time.
+        </p>
+      </div>
+
+    </div>
+
+    <!-- Drawer Footer -->
+    <div class="p-4 border-t border-ibm-border bg-ibm-gray/80 flex items-center justify-between">
+      <button onclick="resetMemory()" class="text-xs text-rose-400 hover:underline">Reset Profile Memory</button>
+      <button id="save-memory-drawer" class="px-4 py-1.5 bg-ibm-blue hover:bg-ibm-blue-hover text-white text-xs font-medium rounded">
+        Save Changes
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Toast Notification Message Box -->
+  <div id="toast" class="fixed bottom-5 right-5 bg-ibm-gray text-white text-xs border border-ibm-blue px-4 py-2.5 rounded shadow-xl flex items-center space-x-2 transform translate-y-20 opacity-0 transition-all duration-300 z-50">
+    <i class="fa-solid fa-circle-check text-ibm-cyan" id="toast-icon"></i>
+    <span id="toast-msg">Copied to clipboard!</span>
+  </div>
+
+  <!-- JavaScript Logic -->
+  <script>
+    // App State Management
+    let selectedTone = 'Humorous';
+    let selectedChannel = 'text';
+    let currentRegisters = {};
+
+    // Scenario Preset Data
+    const presets = {
+      urdu: {
+        text: "Aapne toh iss project mein char chand laga diye!",
+        lang: "urdu",
+        recipient: "peer",
+        tone: "Humorous",
+        channel: "text",
+        output: '"You really brought the magic today! You took this project to a whole new level."',
+        toneTag: "Humorous / Expressive",
+        registers: {
+          casual: '"You totally crushed it on this project! Absolute magic."',
+          direct: '"Great job on this project. Your work added significant value."',
+          formal: '"Your recent contributions have substantially elevated the caliber of this project."'
+        },
+        nuance: {
+          idiom: 'Translated literal Urdu "char chand laga diye" (added four moons) to natural English idiom "brought the magic / elevated this".',
+          tone: 'Target: College Peer. Maintained enthusiastic tone while avoiding stiff textbook phrasing.',
+          memory: 'Applied style tag: "Prefers warm, high-energy phrasing with conversational slang."'
+        }
+      },
+      spanish: {
+        text: "No te preocupes mi hermano, eso lo arreglamos en un abrir y cerrar de ojos.",
+        lang: "spanish",
+        recipient: "boss",
+        tone: "Formal",
+        channel: "email",
+        output: '"Rest assured, we will resolve this matter promptly without delay."',
+        toneTag: "Formal & Reassuring",
+        registers: {
+          casual: '"No worries at all, we will have this fixed in the blink of an eye!"',
+          direct: '"We will fix this issue immediately today."',
+          formal: '"Please be assured our team is taking immediate action to resolve this situation."'
+        },
+        nuance: {
+          idiom: 'Mapped Spanish idiom "un abrir y cerrar de ojos" (in the blink of an eye) to formal English "promptly without delay".',
+          tone: 'Shifted register from informal Spanish peer terms ("mi hermano") to respectful supervisor tone suitable for email.',
+          memory: 'Applied rule: Soften informal colloquials when supervisor recipient is selected.'
+        }
+      },
+      french: {
+        text: "C'est n'importe quoi leur nouveau portail, je n'y comprends rien du tout.",
+        lang: "french",
+        recipient: "support",
+        tone: "Empathetic",
+        channel: "forum",
+        output: '"The new portal feels a bit unintuitive right now—I\'m finding it quite confusing to navigate too."',
+        toneTag: "Empathetic & Constructive",
+        registers: {
+          casual: '"This new portal is super confusing, I can\'t make heads or tails of it either!"',
+          direct: '"The new portal interface is difficult to understand and navigate."',
+          formal: '"The updated portal system presents some usability challenges that require clarification."'
+        },
+        nuance: {
+          idiom: 'Softened frustrated French idiom "c\'est n\'importe quoi" (it\'s nonsense) into a supportive, empathetic critique.',
+          tone: 'Target: Support Group. Frame frustration constructively to encourage mutual peer assistance.',
+          memory: 'Applied style preference: Self-deprecating and inclusive problem sharing.'
+        }
+      }
+    };
+
+    // Initialize Page Controls
+    document.addEventListener('DOMContentLoaded', () => {
+      // Set initial registers from default view
+      currentRegisters = presets.urdu.registers;
+
+      // Setup Drawer listeners
+      document.getElementById('toggle-memory-drawer').addEventListener('click', toggleDrawer);
+      document.getElementById('close-memory-drawer').addEventListener('click', toggleDrawer);
+      document.getElementById('save-memory-drawer').addEventListener('click', toggleDrawer);
+    });
+
+    function toggleDrawer() {
+      const drawer = document.getElementById('memory-drawer');
+      drawer.classList.toggle('translate-x-full');
+    }
+
+    function selectTone(tone, btnElement) {
+      selectedTone = tone;
+      document.getElementById('selected-tone-label').innerText = tone;
+
+      document.querySelectorAll('.tone-pill').forEach(pill => {
+        pill.classList.remove('border-ibm-blue', 'bg-ibm-blue/20', 'text-ibm-cyan');
+        pill.classList.add('border-ibm-border', 'bg-slate-800', 'text-slate-400');
+      });
+
+      btnElement.classList.remove('border-ibm-border', 'bg-slate-800', 'text-slate-400');
+      btnElement.classList.add('border-ibm-blue', 'bg-ibm-blue/20', 'text-ibm-cyan');
+    }
+
+    function setChannel(chan) {
+      selectedChannel = chan;
+      document.querySelectorAll('.channel-btn').forEach(btn => {
+        btn.classList.remove('bg-ibm-blue', 'text-white', 'font-medium');
+        btn.classList.add('text-slate-400');
+      });
+
+      const activeBtn = document.getElementById(`btn-chan-${chan}`);
+      activeBtn.classList.add('bg-ibm-blue', 'text-white', 'font-medium');
+      activeBtn.classList.remove('text-slate-400');
+    }
+
+    function loadPreset(presetKey) {
+      const p = presets[presetKey];
+      if(!p) return;
+
+      document.getElementById('source-text').value = p.text;
+      document.getElementById('source-lang').value = p.lang;
+      document.getElementById('context-recipient').value = p.recipient;
+      setChannel(p.channel);
+
+      // Select tone pill
+      const tonePills = document.querySelectorAll('.tone-pill');
+      tonePills.forEach(pill => {
+        if(pill.innerText.includes(p.tone)) {
+          selectTone(p.tone, pill);
+        }
+      });
+
+      // Directly update output
+      renderOutput(p);
+      showToast(`Loaded "${presetKey.toUpperCase()}" scenario preset`);
+    }
+
+    function triggerTranslation() {
+      const srcText = document.getElementById('source-text').value.trim();
+      if(!srcText) {
+        showToast("Please enter a native phrase first!", "error");
+        return;
+      }
+
+      // Show Loading State
+      const loader = document.getElementById('loading-overlay');
+      const stepText = document.getElementById('loading-step');
+      loader.classList.remove('hidden');
+
+      const steps = [
+        "Analyzing dialectic nuance...",
+        "Querying user personal voice profile...",
+        "Synthesizing recipient context for natural English..."
+      ];
+
+      let idx = 0;
+      const interval = setInterval(() => {
+        idx++;
+        if(idx < steps.length) {
+          stepText.innerText = steps[idx];
+        }
+      }, 400);
+
+      setTimeout(() => {
+        clearInterval(interval);
+        loader.classList.add('hidden');
+
+        // Dynamic output generation based on current selections
+        const recipient = document.getElementById('context-recipient').value;
+        const useMemory = document.getElementById('toggle-memory').checked;
+
+        const dynamicOutput = {
+          output: `"${generateDynamicOutputText(srcText, selectedTone, recipient)}"`,
+          toneTag: `${selectedTone} / ${recipient.toUpperCase()}`,
+          registers: {
+            casual: `"Hey! Basically: ${srcText.substring(0, 30)}..."`,
+            direct: `"Direct message translation: ${srcText.substring(0, 35)}."`,
+            formal: `"Formal phrasing representing the input sentiment accurately."`
+          },
+          nuance: {
+            idiom: `Analyzed native context structures and mapped to ${selectedTone.toLowerCase()} English.`,
+            tone: `Adjusted register specifically for target channel (${selectedChannel.toUpperCase()}) and recipient.`,
+            memory: useMemory ? 'Applied personal profile: "Keeps sentences concise with expressive tone."' : 'Personal memory toggle disabled (Standard AI Mode).'
+          }
+        };
+
+        renderOutput(dynamicOutput);
+        showToast("IBM Bob generated personalized translation!");
+      }, 1400);
+    }
+
+    function generateDynamicOutputText(src, tone, recipient) {
+      if(src.toLowerCase().includes("chand")) return "You really brought the magic today! You took this project to a whole new level.";
+      if(src.toLowerCase().includes("hermano")) return "Rest assured, we will resolve this matter promptly without delay.";
+      if(src.toLowerCase().includes("portail")) return "The new portal feels a bit unintuitive right now—I'm finding it quite confusing too.";
+
+      if(tone === 'Humorous') {
+        return `Honestly, ${src} is my new motto for the week!`;
+      } else if(tone === 'Formal') {
+        return `With regard to your message: "${src}", I would like to offer a streamlined solution.`;
+      } else {
+        return `Here is the natural translation matching your tone: "${src}"`;
+      }
+    }
+
+    function renderOutput(data) {
+      document.getElementById('output-text').innerText = data.output;
+      document.getElementById('out-tone-tag').innerText = data.toneTag;
+
+      currentRegisters = data.registers;
+      document.getElementById('reg-casual-preview').innerText = data.registers.casual;
+      document.getElementById('reg-direct-preview').innerText = data.registers.direct;
+      document.getElementById('reg-formal-preview').innerText = data.registers.formal;
+
+      document.getElementById('nuance-idiom').innerText = data.nuance.idiom;
+      document.getElementById('nuance-tone').innerText = data.nuance.tone;
+      document.getElementById('nuance-memory').innerText = data.nuance.memory;
+    }
+
+    function switchRegister(type) {
+      if(!currentRegisters[type]) return;
+      
+      document.querySelectorAll('.reg-tab').forEach(tab => {
+        tab.classList.remove('border-ibm-blue');
+        tab.classList.add('border-ibm-border');
+      });
+
+      const activeTab = document.getElementById(`reg-${type}`);
+      activeTab.classList.remove('border-ibm-border');
+      activeTab.classList.add('border-ibm-blue');
+
+      document.getElementById('output-text').innerText = currentRegisters[type];
+      showToast(`Switched to ${type.toUpperCase()} register`);
+    }
+
+    function copyOutput() {
+      const text = document.getElementById('output-text').innerText;
+      
+      // Fallback copy logic for iFrame environment
+      const dummy = document.createElement('textarea');
+      document.body.appendChild(dummy);
+      dummy.value = text;
+      dummy.select();
+      document.execCommand('copy');
+      document.body.removeChild(dummy);
+
+      showToast("Copied translation to clipboard!");
+    }
+
+    function clearInput() {
+      document.getElementById('source-text').value = '';
+    }
+
+    function removeTrait(btn) {
+      const item = btn.closest('.group');
+      item.remove();
+      updateTraitCount();
+      showToast("Removed trait from profile memory");
+    }
+
+    function addNewTraitPrompt() {
+      const traitName = prompt("Enter new speaking trait preference (e.g., 'Prefers energetic endings'):");
+      if(traitName) {
+        const container = document.getElementById('traits-list');
+        const newElem = document.createElement('div');
+        newElem.className = "p-3 bg-slate-900 rounded border border-ibm-border flex items-start justify-between gap-2 group";
+        newElem.innerHTML = `
+          <div class="space-y-1">
+            <div class="flex items-center gap-2">
+              <span class="px-1.5 py-0.5 bg-ibm-cyan/20 text-ibm-cyan text-[10px] rounded font-mono">Custom</span>
+              <span class="text-xs font-medium text-slate-200">${traitName}</span>
+            </div>
+            <p class="text-[11px] text-slate-400">User added manual profile preference.</p>
+          </div>
+          <button onclick="removeTrait(this)" class="text-slate-600 hover:text-rose-400 p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <i class="fa-solid fa-trash text-xs"></i>
+          </button>
+        `;
+        container.prepend(newElem);
+        updateTraitCount();
+        showToast("New trait added to memory profile!");
+      }
+    }
+
+    function resetMemory() {
+      if(confirm("Are you sure you want to reset all learned profile traits?")) {
+        document.getElementById('traits-list').innerHTML = `<p class="text-xs text-slate-500 italic p-2">No traits stored. Translate phrases to train Bob!</p>`;
+        updateTraitCount();
+        showToast("Profile memory reset.");
+      }
+    }
+
+    function updateTraitCount() {
+      const count = document.getElementById('traits-list').querySelectorAll('.group').length;
+      document.getElementById('memory-count-badge').innerText = count;
+    }
+
+    function showToast(message, type = "success") {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-msg');
+      const toastIcon = document.getElementById('toast-icon');
+
+      toastMsg.innerText = message;
+      if(type === "error") {
+        toastIcon.className = "fa-solid fa-circle-exclamation text-rose-400";
+        toast.classList.add('border-rose-500');
+      } else {
+        toastIcon.className = "fa-solid fa-circle-check text-ibm-cyan";
+        toast.classList.remove('border-rose-500');
+      }
+
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2500);
+    }
+  </script>
+</body>
+</html>

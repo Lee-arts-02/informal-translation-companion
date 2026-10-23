@@ -1,0 +1,12 @@
+{
+  "name": "nuancebridge",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A context-aware translation companion with a curated demo and personal live mode.",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "check": "node --check app.js && node --check translation.js && node --check preferences.js && node --check demo.js"
+  },
+  "engines": { "node": ">=22" }
+}
