@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { makeIntent, reviseIntent, parseIntents } from '../intent-state.js';
+import { makeIntent, reviseIntent, parseIntents, confirmedIntentions } from '../intent-state.js';
 import { makeMemory, loadMemories, matchMemories, importMemories, exportMemories } from '../memory-store.js';
-import { addEvent, makeSnapshot, snapshotCurrent } from '../workflow-state.js';
+import { addEvent, makeSnapshot, snapshotCurrent, checkReviewed } from '../workflow-state.js';
 
 test('model intent needs real evidence and cannot confirm itself', () => {
   const input = { text: '我尽量周五给你', intent: '不要增加承诺' };
@@ -47,4 +47,17 @@ test('continuous typing coalesces with the first before and latest result', () =
   events = addEvent(events, { kind: 'accepted', before: 'Hi', after: 'Hello', revision: 3 });
   events = addEvent(events, { kind: 'manual-edit', before: 'Hello', after: 'Hello!', revision: 4 });
   assert.equal(events.length, 3);
+});
+test('pending AI guesses are excluded until the writer confirms them', () => {
+  const user = makeIntent('Keep uncertainty');
+  const pending = makeIntent('Be formal', { origin: 'model' });
+  assert.deepEqual(confirmedIntentions([user, pending]), [user]);
+  assert.equal(confirmedIntentions([user, { ...pending, confirmed: true }]).length, 2);
+});
+test('user-reviewed status belongs only to an unchanged check snapshot', () => {
+  const input = { text: 'I will try.', revision: 1, backLanguage: 'Chinese', signature: 'a' };
+  const snapshot = makeSnapshot(input, '我会尽量。');
+  assert.equal(checkReviewed(snapshot, input, snapshot.id), true);
+  assert.equal(checkReviewed(snapshot, { ...input, revision: 2 }, snapshot.id), false);
+  assert.equal(checkReviewed(snapshot, input, 'another-snapshot'), false);
 });

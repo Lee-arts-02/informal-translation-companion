@@ -9,7 +9,8 @@ export function initIntentPanel({ changed, event, fail, remember, getRevision })
     if (!items.length) $('intent-list').append(make('p', 'You can start writing now. Add an intention whenever you need it.', 'help'));
     items.forEach(item => {
       const card = make('article', '', 'intent-card'); card.dataset.intentId = item.id;
-      card.append(make('strong', item.content), make('span', item.confirmed ? item.origin === 'user' ? 'Your instruction' : 'Confirmed by you' : 'AI interpretation · needs your judgment', `origin-label ${item.confirmed ? 'confirmed' : ''}`));
+      card.append(make('strong', item.content), make('span', item.confirmed ? item.origin === 'user' ? 'Your instruction · this draft' : 'Confirmed by you · this draft' : 'AI interpretation · not used until confirmed', `origin-label ${item.confirmed ? 'confirmed' : ''}`));
+      card.append(make('p', item.confirmed ? 'Used for this draft only. Saving a future habit is a separate choice.' : 'Check this against your meaning. Confirm to use it, edit it, or remove it.', 'help intent-scope-note'));
       if (item.evidence) card.append(make('p', `Source wording: “${item.evidence}”${Number.isInteger(item.evidenceRevision) ? ` · revision ${item.evidenceRevision}` : ''}`, 'help'));
       const actions = make('div', '', 'suggestion-actions');
       if (!item.confirmed) actions.append(button('That’s what I mean', () => {

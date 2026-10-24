@@ -29,6 +29,8 @@ async function until(page, selector, text) { await page.waitForFunction(([s, t])
     const url = process.env.TEST_URL || `http://127.0.0.1:${server.address().port}`;
     await page.goto(url); await page.waitForLoadState('networkidle');
     assert.equal(await page.locator('#writing-draft').inputValue(), '');
+    assert.match(await page.locator('#flow-next-title').textContent(), /Start with/);
+    assert(await page.locator('#selection-workbench').evaluate(element => Boolean(element.compareDocumentPosition(document.getElementById('writing-draft')) & Node.DOCUMENT_POSITION_FOLLOWING)));
     assert.equal(await page.locator('#writing-target option').count(), 28);
     assert.equal(await page.locator('#back-language option').count(), 28);
     assert(await page.locator('#copy-draft').isDisabled());
@@ -41,11 +43,19 @@ async function until(page, selector, text) { await page.waitForFunction(([s, t])
     await page.locator('#extract-intents').click();
     assert.equal(await page.locator('.intent-card').count(), 2);
     assert.match(await page.locator('.intent-card').first().textContent(), /AI interpretation/);
+    assert.match(await page.locator('#flow-next-title').textContent(), /interpretation/);
     await page.locator('.intent-card').first().getByRole('button', { name: 'That’s what I mean' }).click();
     assert.match(await page.locator('.intent-card').first().textContent(), /Confirmed by you/);
+    await page.locator('.intent-card').first().getByRole('button', { name: 'Remember for later' }).click();
+    assert(await page.locator('#habit-review-banner').isVisible());
+    await page.locator('#finish-habit-review').click();
+    assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('nuancebridge.memories.v2')).items.length), 0);
     await page.locator('#open-check').click(); await page.locator('#back-translate').click();
     assert.equal(await page.locator('#check-text').inputValue(), '我会在周五前发给你。');
+    await page.locator('#mark-check-reviewed').click();
+    assert.match(await page.locator('#flow-next-title').textContent(), /marked this version/);
     await select(page, 'check-text', 0, 3);
+    assert.match(await page.locator('#check-reviewed-status').textContent(), /Not yet reviewed/);
     await page.locator('#correction-note').fill('我说的是尽量，不是保证');
     await page.locator('#repair-writing').click();
     assert.equal(await page.locator('.suggestion-card').count(), 1);
@@ -54,16 +64,24 @@ async function until(page, selector, text) { await page.waitForFunction(([s, t])
     assert.equal(await page.locator('#writing-draft').inputValue(), "I'll try to send it to you by Friday.");
     assert(await page.locator('#memory-nudge').isVisible());
     await page.locator('#remember-correction').click();
+    assert.equal(await page.locator('#habit-content').evaluate(element => element === document.activeElement), true);
+    assert.match(await page.locator('#habit-scope-preview').textContent(), /Friend/);
+    await page.locator('#habit-use-any').click(); assert.match(await page.locator('#habit-scope-preview').textContent(), /any reader/);
+    await page.locator('#habit-use-context').click();
     await page.locator('#habit-content').fill('Preserve uncertainty in tentative plans');
     assert.equal(await page.locator('#habit-recipient').inputValue(), 'Friend');
+    await page.locator('#habits-dialog').screenshot({ path: path.join(root, 'preview/habit-review.png'), animations: 'disabled' });
     await page.locator('#habit-form button[type="submit"]').click();
     assert.equal(await page.locator('.habit-card').count(), 1);
-    await page.locator('#close-habits').click();
+    assert.match(await page.locator('#habit-save-result').textContent(), /Saved on this browser/);
+    await page.locator('#finish-habit-review').click();
     await page.locator('[data-panel="check"]').click();
     assert.match(await page.locator('#snapshot-status').textContent(), /Earlier check/);
     assert(await page.locator('#repair-writing').isDisabled());
     await page.locator('#back-translate').click();
     assert.match(await page.locator('#check-text').inputValue(), /尽量/);
+    await page.locator('#mark-check-reviewed').click();
+    assert.match(await page.locator('#check-reviewed-status').textContent(), /Reviewed by you/);
     await page.locator('[data-panel="history"]').click();
     assert.match(await page.locator('#revision-events').textContent(), /habit saved/);
     // Persist only explicitly saved habits, not drafts/events/API credentials.
@@ -116,6 +134,11 @@ async function until(page, selector, text) { await page.waitForFunction(([s, t])
     await page.locator('#intent-panel > summary').click(); await page.locator('#extract-intents').click();
     await until(page, '#intent-list', 'Keep uncertainty');
     await page.locator('#analyze-writing').click(); await until(page, '#writing-suggestions', 'small local option');
+    assert.deepEqual(sent.at(-1).intentions, []);
+    await page.locator('.intent-card').getByRole('button', { name: 'That’s what I mean' }).click();
+    await page.locator('#analyze-writing').click(); await until(page, '#writing-suggestions', 'small local option');
+    assert.equal(sent.at(-1).intentions.length, 1);
+    assert.equal(sent.at(-1).intentions[0].confirmed, true);
     const card = page.locator('.suggestion-card').first();
     await page.locator('#writing-draft').focus();
     await page.locator('#writing-draft').evaluate(element => element.setSelectionRange(0, 0));
@@ -148,8 +171,11 @@ async function until(page, selector, text) { await page.waitForFunction(([s, t])
     assert.equal(await page.locator('.suggestion-card').count(), 0);
     assert.match(await page.locator('#writing-status').textContent(), /flagged passage changed/);
     // Changes to context invalidate snapshots and pending repair previews.
+    await page.locator('#mark-check-reviewed').click();
+    assert.match(await page.locator('#check-reviewed-status').textContent(), /Reviewed by you/);
     await page.locator('#writing-avoid').fill('Avoid overpromising');
     assert(await page.locator('#repair-writing').isDisabled());
+    assert.match(await page.locator('#check-reviewed-status').textContent(), /Not yet reviewed/);
     await page.locator('#starting-draft').click(); await page.locator('#starting-preview').waitFor({ state: 'visible' });
     await page.locator('#accept-starting').click();
     // Selected notes move only after confirmation, and protected words reject edits.
@@ -221,6 +247,18 @@ async function until(page, selector, text) { await page.waitForFunction(([s, t])
     for (const width of [1440, 390, 320]) {
       await page.setViewportSize({ width, height: 1000 });
       assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `Horizontal overflow at ${width}`);
+      const sticky = await page.evaluate(() => {
+        const toolbar = document.getElementById('selection-workbench'), draft = document.getElementById('writing-draft');
+        const top = toolbar.getBoundingClientRect().top + scrollY;
+        window.scrollTo(0, top + 80);
+        const rect = toolbar.getBoundingClientRect();
+        return { top: rect.top, bottom: rect.bottom, draftBottom: draft.getBoundingClientRect().bottom };
+      });
+      assert(sticky.top >= 0 && sticky.top <= 12, `Selection controls must stay at viewport top at ${width}: ${JSON.stringify(sticky)}`);
+      assert(sticky.bottom < sticky.draftBottom, `Selection controls must leave draft content below them at ${width}`);
+      await page.evaluate(() => window.scrollTo(0, 0));
+      const above = await page.evaluate(() => document.getElementById('selection-workbench').getBoundingClientRect().bottom <= document.getElementById('writing-draft').getBoundingClientRect().top + 1);
+      assert(above, `Passage controls must render above the editor at ${width}`);
       if (width !== 320) await page.screenshot({ path: path.join(root, `preview/writing-${width === 1440 ? 'desktop' : 'mobile'}.png`), fullPage: true, animations: 'disabled' });
     }
     await page.setViewportSize({ width: 390, height: 844 });
@@ -243,6 +281,7 @@ async function until(page, selector, text) { await page.waitForFunction(([s, t])
     await restricted.locator('#habit-form button[type="submit"]').click();
     assert.match(await restricted.locator('.habit-card').textContent(), /Visit-only habit/);
     assert.match(await restricted.locator('#habits-status').textContent(), /only for this visit/);
+    assert.match(await restricted.locator('#finish-habit-review').textContent(), /Kept for this visit/);
     assert.deepEqual(restrictedErrors, []); await restricted.close();
     assert.deepEqual(errors, []);
     console.log('PASS: authored end-to-end intention/check/repair/memory; scoped live inputs; per-session exclusions; user-edited provenance; undo; source-blind backtranslation; stale snapshots; note extraction; protection; reload/key privacy; translator; desktop/mobile; denied storage.');

@@ -69,3 +69,10 @@ test('conflict warnings must cite real supplied habits and explicit instructions
   ] }), { ...input, preferences: ['Keep it formal'] });
   assert.equal(result.conflicts.length, 1);
 });
+test('the provider boundary filters unconfirmed intention cards', () => {
+  const request = api.buildReviewRequest('analyze', { ...input, intentions: [
+    { id: 'pending', content: 'Make it formal', confirmed: false },
+    { id: 'confirmed', content: 'Keep it natural', confirmed: true },
+  ] }, 'model');
+  assert.deepEqual(JSON.parse(request.messages[1].content).intentions.map(item => item.id), ['confirmed']);
+});

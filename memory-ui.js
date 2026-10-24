@@ -11,19 +11,25 @@ export function initMemories({ context, changed, event, notify, enabled = () => 
   let preserveUnread = loadIssue.startsWith('Saved habit data');
   const dialog = make('dialog'); dialog.id = 'habits-dialog'; dialog.setAttribute('aria-labelledby', 'habits-title');
   dialog.innerHTML = `<div class="dialog-heading"><h2 id="habits-title">Your expression habits</h2><button type="button" id="close-habits" class="close-button" aria-label="Close habits">×</button></div>
-    <p class="dialog-copy">Saved only on this browser, only when you choose. Scope is matched to the reader label, channel and writing language. New instructions take priority.</p>
-    <p id="habits-status" class="help" role="status"></p><div id="habits-list"></div>
-    <form id="habit-form"><h3 id="habit-form-title">Add a habit</h3><label>A habit you want to keep<textarea id="habit-content" required maxlength="400" rows="2" placeholder="e.g. Preserve uncertainty in tentative plans."></textarea></label>
+    <p class="dialog-copy">A habit can guide future writing. Confirming an intention or accepting an edit does not save one. Everything here is stored only on this browser.</p>
+    <p id="habits-status" class="help" role="status"></p><div id="habit-save-result" class="habit-save-result" role="status"></div><div id="habit-review-banner" class="habit-review-banner" hidden><strong>Not saved yet — review before remembering</strong><p>Turn this correction into a reusable instruction. Choose where it applies, or return to this draft without saving.</p></div>
+    <form id="habit-form"><h3 id="habit-form-title">Add a habit</h3><label>1 · What should AI remember?<textarea id="habit-content" required maxlength="400" rows="2" placeholder="e.g. When I describe a tentative plan, preserve uncertainty."></textarea></label>
+    <p class="help">Write a reusable instruction rather than “I disliked this sentence.” You can edit the candidate freely.</p><p class="field-label">2 · When should it apply?</p><div class="habit-scope-presets"><button id="habit-use-context" type="button" class="button small outline">Use this writing context</button><button id="habit-use-any" type="button" class="button small outline">Any writing context</button></div>
     <div class="habit-scope"><label>Reader label<input id="habit-recipient" maxlength="150" placeholder="Any reader"></label><label>Channel<select id="habit-channel"><option value="">Any channel</option><option>Text message</option><option>Email</option><option>Social media</option><option>Personal writing</option><option>Creative writing</option><option>Community forum</option></select></label><label>Writing language<select id="habit-target"><option value="">Any language</option></select></label></div>
-    <p id="habit-source" class="help"></p><div class="dialog-actions"><button id="cancel-habit-edit" type="button" class="button outline">Reset form</button><button class="button primary" type="submit">Save this habit</button></div></form>
+    <p id="habit-scope-preview" class="habit-scope-preview" aria-live="polite"></p><p id="habit-source" class="help"></p><div class="dialog-actions"><button id="cancel-habit-edit" type="button" class="button outline">Clear form</button><button class="button primary" type="submit">Save this habit</button></div></form>
+    <button id="finish-habit-review" type="button" class="button outline">Back to my draft · no save required</button><details id="saved-habits-section" open><summary>My saved habits</summary><div id="habits-list"></div></details>
     <details class="habit-tools"><summary>Samples, backup & storage</summary><button id="open-voice-example" class="text-button">Manage my explicitly saved writing sample</button><button id="export-habits" class="text-button">Export habits</button><label>Import habits (replaces this list)<input id="import-habits" type="file" accept="application/json,.json"></label><button id="clear-habits" class="text-button">Clear all habits</button></details>`;
   document.body.append(dialog);
   $('habit-target').append(...[...$('writing-target').options].map(option => option.cloneNode(true)));
   function persist() {
     if (preserveUnread) { $('habits-status').textContent = loadIssue; notify(loadIssue); return; }
-    try { saveMemories(storage, items); $('habits-status').textContent = 'Saved on this browser. Drafts are not saved with your habits.'; }
-    catch { $('habits-status').textContent = 'Browser storage unavailable. Changes last only for this visit.'; notify('Habits are available for this visit only; browser storage is unavailable.'); }
+    try { saveMemories(storage, items); $('habits-status').textContent = 'Saved on this browser. Drafts are not saved with your habits.'; return true; }
+    catch { $('habits-status').textContent = 'Browser storage unavailable. Changes last only for this visit.'; notify('Habits are available for this visit only; browser storage is unavailable.'); return false; }
   }
+  function scopeText(scope) {
+    return `Reader: ${scope.recipient || 'any reader'} · Channel: ${scope.channel || 'any channel'} · Language: ${scope.target || 'any writing language'}. All specified fields must match. Current instructions take priority.`;
+  }
+  function previewScope() { $('habit-scope-preview').textContent = scopeText(Object.fromEntries(['recipient', 'channel', 'target'].map(key => [key, $(`habit-${key}`).value]))); }
   function reset(candidate) {
     editing = null; source = candidate?.source || null;
     $('habit-form').reset(); $('habit-content').value = candidate?.content || '';
@@ -37,6 +43,9 @@ export function initMemories({ context, changed, event, notify, enabled = () => 
     }
     $('habit-source').textContent = source ? `Source to be saved: ${source.label}` : 'Source: a habit explicitly added by you.';
     $('habit-form-title').textContent = candidate ? 'Review before remembering' : 'Add a habit';
+    $('habit-review-banner').hidden = !candidate;
+    $('habit-save-result').textContent = '';
+    previewScope();
   }
   function render() {
     $('habits-list').replaceChildren();
@@ -79,10 +88,18 @@ export function initMemories({ context, changed, event, notify, enabled = () => 
         scope: Object.fromEntries(['recipient', 'channel', 'target'].map(key => [key, $(`habit-${key}`).value])),
         source: source || undefined, updatedAt: new Date().toISOString() });
       items = old ? items.map(x => x.id === editing ? item : x) : [...items, item];
-      persist(); render(); event({ kind: 'habit-saved', note: item.content, memoryId: item.id }); changed(); reset();
+      const durable = persist(); render(); event({ kind: 'habit-saved', note: item.content, memoryId: item.id }); changed(); reset();
+      const useState = !item.enabled ? 'Still paused; enable it before use.' : enabled() ? 'Available for matching writing contexts.' : 'Your writing profile is off; enable it in the workspace to use this habit for writing.';
+      $('habit-save-result').textContent = `${durable ? 'Saved on this browser' : 'Kept for this visit only'}: “${item.content}”. ${scopeText(item.scope)} ${useState}`;
+      $('saved-habits-section').open = true;
+      $('finish-habit-review').textContent = durable ? 'Saved · return to my draft' : 'Kept for this visit · return to my draft'; $('finish-habit-review').focus();
     } catch (error) { $('habits-status').textContent = error.message; }
   });
   $('close-habits').addEventListener('click', () => dialog.close());
+  $('finish-habit-review').addEventListener('click', () => { dialog.close(); $('writing-draft').focus(); });
+  for (const key of ['recipient', 'channel', 'target']) $(`habit-${key}`).addEventListener('input', previewScope);
+  $('habit-use-context').addEventListener('click', () => { for (const [key, value] of Object.entries(context())) $(`habit-${key}`).value = value; previewScope(); });
+  $('habit-use-any').addEventListener('click', () => { for (const key of ['recipient', 'channel', 'target']) $(`habit-${key}`).value = ''; previewScope(); });
   $('cancel-habit-edit').addEventListener('click', () => reset());
   $('open-voice-example').addEventListener('click', () => { dialog.close(); $('voice-dialog').showModal(); });
   $('export-habits').addEventListener('click', () => download('nuancebridge-habits.json', exportMemories(items), 'application/json'));
@@ -103,7 +120,7 @@ export function initMemories({ context, changed, event, notify, enabled = () => 
   // Write migration once, including an empty list, so removed legacy habits never reappear.
   if (!preserveUnread && storage) { try { saveMemories(storage, items); } catch { /* Explicit saves report storage failure. */ } }
   render(); reset();
-  return { open(candidate) { reset(candidate); render(); $('habits-status').textContent = loadIssue; dialog.showModal(); },
+  return { open(candidate) { reset(candidate); render(); $('saved-habits-section').open = !candidate; $('finish-habit-review').textContent = 'Back to my draft · no save required'; $('habits-status').textContent = loadIssue; dialog.showModal(); if (candidate) $('habit-content').focus(); },
     matched: () => matchMemories(items, context(), exclusions), refresh: refreshSession,
     forContext: otherContext => matchMemories(items, otherContext),
     skip(content) { exclusions = [...new Set([...exclusions, ...items.filter(x => x.content === content).map(x => x.id)])]; changed(); },

@@ -1,4 +1,5 @@
 // An inspectable working interpretation, never a claim about hidden model reasoning.
+export function confirmedIntentions(items = []) { return items.filter(item => item.confirmed === true); }
 export function makeIntent(content, options = {}) {
   if (typeof content !== 'string' || !content.trim() || content.length > 400) throw new Error('Use an intention of 1–400 characters.');
   return { id: crypto.randomUUID(), content: content.trim(), category: options.category || 'expression',

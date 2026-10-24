@@ -4,15 +4,17 @@ import { writingDemos, demoReview } from './writing-demo.js';
 import { $, make, button, download, showPanel } from './ui-helpers.js';
 import { initMemories } from './memory-ui.js';
 import { initIntentPanel } from './intent-ui.js';
-import { addEvent, makeSnapshot, snapshotCurrent } from './workflow-state.js';
+import { addEvent, makeSnapshot, snapshotCurrent, checkReviewed } from './workflow-state.js';
 import { initWritingVoice } from './writing-voice.js';
 import { renderOptions, renderEvents } from './writing-panels.js';
 import { renderSelection } from './selection-ui.js';
+import { initFlowGuide } from './flow-ui.js';
+import { confirmedIntentions } from './intent-state.js';
 
 export function initWriting({ getConnection, notify }) {
   let session = createSession(), demo = false, sample = null, suggestions = [], selection = null;
   let epoch = 0, controller = null, preview = null, snapshot = null, flagged = '', events = [], candidate = null;
-  let lastInputs = null;
+  let lastInputs = null, guide = null, reviewedId = null;
   const contextIds = ['writing-intent', 'writing-avoid', 'writing-recipient', 'writing-relationship', 'writing-channel', 'writing-target', 'explanation-language', 'writing-scope', 'back-language', 'allow-mix'];
   const actionIds = ['analyze-writing', 'starting-draft', 'check-meaning', 'back-translate', 'extract-intents', 'repair-writing'];
   function fail(message = '') { for (const id of ['writing-error', 'companion-error']) { $(id).textContent = message; $(id).hidden = !message; } }
@@ -34,18 +36,29 @@ export function initWriting({ getConnection, notify }) {
     return { ...session, ...context(), intent: $('writing-intent').value, avoid: $('writing-avoid').value,
       relationship: $('writing-relationship').value, explanationLanguage: $('explanation-language').value,
       backLanguage: $('back-language').value, scope: $('writing-scope').value, selection,
-      preferences: habits.map(item => item.content), intentions: intents.get(), allowMix: $('allow-mix').checked,
+      preferences: habits.map(item => item.content), intentions: confirmedIntentions(intents.get()), allowMix: $('allow-mix').checked,
       voiceSamples: voice.get().enabled && voice.get().sample ? [voice.get().sample] : [] };
   }
   function signature() {
-    return JSON.stringify({ context: contextIds.map(id => $(id).type === 'checkbox' ? $(id).checked : $(id).value), intentions: intents.get(), habits: memory.matched(), voice: voice.get() });
+    return JSON.stringify({ context: contextIds.map(id => $(id).type === 'checkbox' ? $(id).checked : $(id).value), intentions: confirmedIntentions(intents.get()), habits: memory.matched(), voice: voice.get() });
   }
   function snapshotInput() { return { text: session.text, revision: session.revision, backLanguage: $('back-language').value, signature: signature() }; }
   function refreshSnapshot() {
-    if (!snapshot) { $('snapshot-status').textContent = 'No cross-language check yet.'; $('repair-writing').disabled = true; return; }
+    $('check-current-draft').textContent = session.text || 'Your current draft will appear here.';
+    if (!snapshot) { $('snapshot-status').textContent = 'First, create a view in a familiar language. Your draft will stay unchanged.'; $('snapshot-status').classList.remove('stale'); $('repair-writing').disabled = true; $('mark-check-reviewed').disabled = true; $('check-reviewed-status').textContent = ''; $('repair-help').textContent = 'Create a language check, then describe any mismatch. Nothing changes until you accept a fix.'; refreshFlow(); return; }
     const fresh = snapshotCurrent(snapshot, snapshotInput());
     $('snapshot-status').textContent = fresh ? `Current check · revision ${snapshot.revision} · ${snapshot.language}` : `Earlier check · revision ${snapshot.revision}. Draft or context changed — check again before repairing.`;
-    $('snapshot-status').classList.toggle('stale', !fresh); $('repair-writing').disabled = !fresh || Boolean(controller);
+    $('snapshot-status').classList.toggle('stale', !fresh); $('repair-writing').disabled = !fresh || Boolean(controller) || !$('correction-note').value.trim();
+    $('mark-check-reviewed').disabled = !fresh || Boolean(controller);
+    $('check-reviewed-status').textContent = checkReviewed(snapshot, snapshotInput(), reviewedId) ? 'Reviewed by you for this version. You can copy or keep editing.' : 'Not yet reviewed by you for the current wording and context.';
+    $('repair-help').textContent = fresh ? 'Describe the mismatch to preview a local fix. You accept each edit; nothing is changed automatically.' : 'Create an updated check before requesting a repair. Your earlier notes are kept.';
+    refreshFlow();
+  }
+  function refreshFlow() {
+    guide?.refresh({ text: session.text, goal: $('writing-intent').value, avoid: $('writing-avoid').value, intentions: intents.get(),
+      habits: voice.get().enabled ? memory.matched() : [], hasSample: Boolean(voice.get().enabled && voice.get().sample),
+      snapshot, fresh: snapshotCurrent(snapshot, snapshotInput()), reviewed: checkReviewed(snapshot, snapshotInput(), reviewedId),
+      suggestions: suggestions.length, candidate, lastInputs, signature: signature(), revision: session.revision, demo });
   }
   function updateContext() { $('context-summary').textContent = [context().recipient, context().channel, $('writing-intent').value].filter(Boolean).join(' · ').slice(0, 100) || 'Add a little context, if you like'; }
   function invalidate() {
@@ -54,7 +67,7 @@ export function initWriting({ getConnection, notify }) {
     $('selection-feedback').textContent = '';
     $('habit-conflicts').replaceChildren();
     $('suggestion-summary').textContent = 'Ready when you are. Ask for fresh suggestions after a change.';
-    fail(); renderSuggestions(); memory.refresh(); refreshSnapshot(); updateContext(); $('use-writing-habits').checked = voice.get().enabled;
+    fail(); renderSuggestions(); memory.refresh(); refreshSnapshot(); updateContext(); $('use-writing-habits').checked = voice.get().enabled; refreshFlow();
   }
   function log(data) { events = addEvent(events, { revision: session.revision, ...data }); if (!$('panel-history').hidden) renderEvents(events); return events.at(-1); }
   function updateSession() {
@@ -91,6 +104,7 @@ export function initWriting({ getConnection, notify }) {
         candidate = { content: content.slice(0, 400), source: { kind: 'correction', label: `You reviewed “${item.original}” → “${replacement}”. Feedback: ${content}`.slice(0, 600), eventId: event.id } };
         $('memory-nudge-text').textContent = content; $('memory-nudge').hidden = false;
       }
+      refreshFlow();
       $('writing-status').textContent = 'Only that passage changed. You can undo it or check the new wording.'; $('analyze-writing').focus();
     } catch (error) { fail(error.message); }
   }
@@ -115,7 +129,7 @@ export function initWriting({ getConnection, notify }) {
     try {
       const output = demo ? demoReview(action, input, sample, input.explanationLanguage) : await reviewWriting(action, input, { ...connection, signal: controller.signal });
       if (requestEpoch !== epoch) return;
-      lastInputs = { action, habits, at: new Date().toISOString() };
+      lastInputs = { action, habits, at: new Date().toISOString(), revision: input.revision, signature: binding.signature, intentions: input.intentions };
       $('last-habits').textContent = `${demo ? 'Demo inputs' : 'Last request inputs'} (${action}): ${habits.map(x => x.content).join(' · ') || 'no saved habits'}${action === 'back' ? '; original, intent and voice sample were excluded.' : ''}`;
       log({ kind: demo ? 'demo-request' : 'ai-request', note: action, habits });
       if (action === 'intentions') {
@@ -133,7 +147,7 @@ export function initWriting({ getConnection, notify }) {
         startingDraft(session, output.draft); preview = { text: output.draft, revision: session.revision, epoch, habits };
         $('starting-preview-text').textContent = output.draft; $('starting-preview').showModal();
       } else if (action === 'back') {
-        snapshot = makeSnapshot(binding, output.text); flagged = ''; $('flagged-text').textContent = '';
+        snapshot = makeSnapshot(binding, output.text); reviewedId = null; flagged = ''; $('flagged-text').textContent = '';
         $('check-text').value = output.text; $('correction-note').value = ''; showPanel('check');
         log({ kind: 'cross-language-check', note: `${snapshot.language} · snapshot ${snapshot.id}` });
       } else {
@@ -147,7 +161,7 @@ export function initWriting({ getConnection, notify }) {
     finally { if (requestEpoch === epoch) { controller = null; busy(false); } }
   }
   function resetWorkspace(text = '') {
-    cancel(); session = createSession(text); selection = null; snapshot = null; events = []; flagged = ''; lastInputs = null;
+    cancel(); session = createSession(text); selection = null; snapshot = null; reviewedId = null; events = []; flagged = ''; lastInputs = null;
     $('last-habits').replaceChildren(); $('check-text').value = ''; $('correction-note').value = ''; $('flagged-text').textContent = '';
     intents.reset(); memory.resetSession(); invalidate(); renderEvents(events); showPanel('suggestions', false);
   }
@@ -174,8 +188,18 @@ export function initWriting({ getConnection, notify }) {
   $('use-writing-habits').checked = voice.get().enabled;
   $('use-writing-habits').addEventListener('change', () => voice.setEnabled($('use-writing-habits').checked));
   $('remember-correction').addEventListener('click', () => { if (candidate) rememberCandidate(candidate); });
-  $('dismiss-memory').addEventListener('click', () => { candidate = null; $('memory-nudge').hidden = true; });
+  $('dismiss-memory').addEventListener('click', () => { candidate = null; $('memory-nudge').hidden = true; refreshFlow(); });
   $('open-check').addEventListener('click', () => { showPanel('check'); $('back-translate').focus(); });
+  $('mark-check-reviewed').addEventListener('click', () => {
+    if (!snapshotCurrent(snapshot, snapshotInput())) return;
+    reviewedId = snapshot.id; log({ kind: 'meaning-reviewed', note: 'Writer marked the current check as matching their meaning; not a model accuracy claim.' }); refreshSnapshot();
+  });
+  $('return-to-writing').addEventListener('click', () => { $('suggestions-panel').classList.remove('is-open'); $('writing-draft').focus(); });
+  document.querySelectorAll('[data-mismatch]').forEach(node => node.addEventListener('click', () => {
+    const previous = $('correction-note').value.trim();
+    if (previous) { $('correction-note').focus(); return; }
+    $('correction-note').value = node.dataset.mismatch; $('correction-note').dispatchEvent(new Event('input')); $('correction-note').focus();
+  }));
   $('writing-live-mode').addEventListener('click', () => { demo = false; sample = null; invalidate(); updateSession(); $('writing-draft').focus(); });
   $('writing-demo-mode').addEventListener('click', () => { if (session.text && !confirm('Replace this session with an authored example?')) return; loadDemo(writingDemos.find(x => x.id === 'promise') || writingDemos[0]); });
   $('new-writing-session').addEventListener('click', () => {
@@ -232,10 +256,10 @@ export function initWriting({ getConnection, notify }) {
   $('writing-cancel').addEventListener('click', () => { cancel(); $('writing-status').textContent = 'Cancelled. Provider work already processed may still incur charges.'; });
   $('check-text').addEventListener('select', () => {
     const next = $('check-text').value.slice($('check-text').selectionStart, $('check-text').selectionEnd);
-    if (next !== flagged) { cancel(); suggestions = suggestions.filter(item => !item.correction); preview = null; renderSuggestions(); $('writing-status').textContent = 'Your flagged passage changed. Preview a new fix when ready.'; }
+    if (next !== flagged) { cancel(); reviewedId = null; suggestions = suggestions.filter(item => !item.correction); preview = null; renderSuggestions(); refreshSnapshot(); $('writing-status').textContent = 'Your flagged passage changed. Preview a new fix when ready.'; }
     flagged = next; $('flagged-text').textContent = flagged ? `You flagged: ${flagged}` : '';
   });
-  $('correction-note').addEventListener('input', () => { cancel(); suggestions = []; preview = null; renderSuggestions(); $('writing-status').textContent = 'Your explanation changed. Preview a new fix when ready.'; });
+  $('correction-note').addEventListener('input', () => { cancel(); reviewedId = null; suggestions = []; preview = null; renderSuggestions(); refreshSnapshot(); $('writing-status').textContent = 'Your explanation changed. Preview a new fix when ready.'; });
   $('accept-starting').addEventListener('click', () => {
     try {
       if (!preview || preview.revision !== session.revision || preview.epoch !== epoch) throw new Error('This preview is out of date. Request a new draft.');
@@ -250,6 +274,10 @@ export function initWriting({ getConnection, notify }) {
   $('download-peer').addEventListener('click', () => download('nuancebridge-review.txt', `Intention: ${$('writing-intent').value}\nAvoid: ${$('writing-avoid').value}\n\n${session.text}\n\nPlease check meaning, tone and cultural expressions. This file does not sync.`));
   $('save-peer').addEventListener('click', () => { const note = $('peer-notes').value.trim(); if (!note) return; session = recordFeedback(session, 'peer', note); log({ kind: 'human-feedback', note }); $('peer-notes').value = ''; $('peer-dialog').close(); invalidate(); updateSession(); });
   window.addEventListener('nuancebridge:settings', invalidate); window.addEventListener('pagehide', cancel);
+  guide = initFlowGuide({ editGoal: () => { $('context-panel').open = true; $('writing-intent').focus(); },
+    reviewIntentions: () => { $('intent-panel').open = true; (document.querySelector('.intent-card button') || $('new-intent')).focus(); },
+    write: () => { if (suggestions.length) { showPanel('suggestions'); document.querySelector('.suggestion-card button')?.focus(); } else { $('suggestions-panel').classList.remove('is-open'); $('writing-draft').focus(); } },
+    check: () => { showPanel('check'); $('back-translate').focus(); }, remember: () => candidate ? rememberCandidate(candidate) : memory.open() });
   updateSession(); renderSuggestions(); renderEvents(events);
   return { openHabits: () => memory.open(), habitsFor: otherContext => memory.forContext(otherContext).map(x => x.content) };
 }

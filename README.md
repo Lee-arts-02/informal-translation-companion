@@ -16,6 +16,10 @@
 
 The **“尽量” is not a promise** authored example demonstrates the complete journey without an API key: inspect intent, see the overstatement in Chinese, explain that “尽量” means trying rather than guaranteeing, accept a local English repair, and optionally save a scoped habit. Three additional examples explore warmth, boundaries and a cultural idiom. All demos are clearly labeled authored; changed wording outside their curated variants requires live mode. The authored repair fixture supports the uncertainty example, not arbitrary feedback.
 
+The journey strip keeps the current goal visible and offers optional routes between intention, wording, meaning checks and future habits. Its next-action cue reflects the current session state rather than a mandatory completion score. **What will be provided to AI?** separates explicit context and confirmed intention cards from pending interpretations, and indicates when text or inputs changed after a request. Pending model guesses are not sent as writing instructions until the user confirms them.
+
+Language checks guide the writer through **read → decide → refine**. The current draft can be viewed alongside the other-language snapshot; mismatch prompts help start feedback without overwriting existing notes. **This matches what I mean** records the writer's judgment for that exact check version, not model-verified accuracy. Text/context changes invalidate that status. Candidate habits open directly in an unsaved review form with source, editable wording, scope presets, a plain-language matching preview and an explicit return-to-draft path. Confirming a draft intention and saving a future habit remain separate actions.
+
 On phones the companion opens as a dismissible bottom panel, preserving the draft. Context, intention details, suggestion explanations and additional reader perspectives use progressive disclosure.
 
 ## Words, instructions and protected expressions
@@ -23,6 +27,8 @@ On phones the companion opens as a dismissible bottom panel, preserving the draf
 Select a passage to **keep these words**, **find an expression**, or mark **this is a note to AI**. Moving a note out of the final draft requires confirmation. Undo restores moved notes and their prior task instructions unless those instructions were subsequently edited.
 
 The passage workbench shows the actual selected words above three outcome cards: **Keep exactly as written**, **Suggest another expression**, and **Move to AI instructions**. Descriptions and examples explain what stays in the final text, what needs a preview, and what moves out of it. Unavailable actions are disabled with visible guidance; completed protection and note moves show local feedback and an undo path. This guidance draws on metacognitive-scaffolding considerations from [Ramesh et al., CHI 2026](https://arxiv.org/abs/2602.05111), applied here as a writing-interface design hypothesis rather than a proven outcome.
+
+The workbench now sits **above the editor**, contracts when idle and becomes a compact sticky toolbar while a passage is selected. It stays within the editor area on desktop and phone; keyboard selection and focus restoration are supported. The rest of the journey also applies the paper's ideas of visible goals, workflow guidance, input transparency and user-controlled stopping cues, without treating health-domain findings as writing-usability evidence.
 
 Protection applies to the selected occurrence, including repeated expressions and Unicode. It is enforced in code for manual edits, local replacements and full starting drafts. Remove a protection chip before changing that expression.
 

@@ -5,9 +5,9 @@ export function renderSelection(session, selection, target, busy = false) {
   const selected = selection ? session.text.slice(selection.start, selection.end) : '';
   const overlap = selection && session.protected.some(span => selection.start < span.end && selection.end > span.start);
   $('selection-workbench').classList.toggle('has-selection', Boolean(selected));
-  $('selected-passage').replaceChildren(make('span', selected || 'Select a word or sentence in your draft above.'));
+  $('selected-passage').replaceChildren(make('span', selected || 'Select a word or sentence in your draft below.'));
   $('selection-caption').textContent = selected ? 'You selected' : 'Start here';
-  $('writing-selection').textContent = selected ? `${selection.end - selection.start} characters selected · choose what happens to this passage below.` : 'Highlight a word or sentence above, then choose an action below.';
+  $('writing-selection').textContent = selected ? `${selection.end - selection.start} characters selected · passage actions are above the editor.` : 'Highlight a word or sentence to use the passage controls above the editor.';
   $('selection-guidance').textContent = overlap
     ? 'This selection includes protected words. Remove their protection chip before protecting it again or moving it to instructions. Wording suggestions cannot change protected words.'
     : selected ? 'Only this passage is targeted. Changing your selection updates this preview.'

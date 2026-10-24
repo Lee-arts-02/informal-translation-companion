@@ -13,3 +13,6 @@ export function snapshotCurrent(snapshot, input) {
   return Boolean(snapshot && snapshot.draft === input.text && snapshot.revision === input.revision
     && snapshot.language === input.backLanguage && snapshot.signature === input.signature);
 }
+export function checkReviewed(snapshot, input, reviewedId) {
+  return snapshotCurrent(snapshot, input) && snapshot.id === reviewedId;
+}
