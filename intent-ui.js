@@ -5,6 +5,7 @@ export function initIntentPanel({ changed, event, fail, remember, getRevision })
   let items = [];
   function focusNext() { (document.querySelector('[data-confirm-intent]') || $('back-from-intentions')).focus(); }
   function render() {
+    $('back-from-intentions').textContent = items.some(item => !item.confirmed) ? 'Continue without unconfirmed intentions' : 'Back to writing';
     $('intent-count').textContent = items.length ? `${items.length} intentions · ${items.filter(x => x.confirmed).length} confirmed` : 'Add your own or let AI suggest';
     $('intent-list').replaceChildren();
     if (!items.length) $('intent-list').append(make('p', 'You can start writing now. Add an intention whenever you need it.', 'help'));

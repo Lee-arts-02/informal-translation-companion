@@ -19,11 +19,11 @@ async function until(page, selector, text) { await page.waitForFunction(([s, t])
 
 // Open disclosures through their visible summaries, as a user would.
 async function ready(page, selector) {
+  if (selector === '[data-panel="check"]') selector = '#open-check';
+  if (selector === '[data-panel="history"]') selector = '#open-history';
   const locator = page.locator(selector);
   if ((selector.includes('intent-panel') || selector === '.intent-card') && await page.locator('#intent-panel').evaluate(el => el.hidden))
-    await page.locator('#flow-intention').click();
-  if (selector.startsWith('[data-panel=') && !await page.locator('#suggestions-panel').isVisible())
-    await (await ready(page, '#open-companion')).click();
+    await (await ready(page, '#flow-intention')).click();
   const parents = await locator.first().evaluate(el => {
     const result = []; for (let p = el.parentElement; p; p = p.parentElement)
       if (p.tagName === 'DETAILS') result.unshift(p.id);
@@ -91,7 +91,7 @@ async function openTools(page, section) {
     assert(await page.locator('#memory-nudge').isVisible());
     assert.match(await page.locator('#decision-result').textContent(), /Applied to your draft/);
     assert(!((await page.locator('#writing-suggestions').textContent()).includes('Start with your words')));
-    await page.locator('#remember-correction').click();
+    await (await ready(page, '#remember-correction')).click();
     assert.equal(await page.locator('#habit-content').evaluate(element => element === document.activeElement), true);
     assert.match(await page.locator('#habit-scope-preview').textContent(), /Friend/);
     await page.locator('#habit-use-any').click(); assert.match(await page.locator('#habit-scope-preview').textContent(), /any reader/);
@@ -115,7 +115,7 @@ async function openTools(page, section) {
     // Persist only explicitly saved habits, not drafts/events/API credentials.
     await page.reload(); await page.waitForLoadState('networkidle');
     assert.equal(await page.locator('#writing-draft').inputValue(), '');
-    await page.locator('#open-habits').click();
+    await (await ready(page, '#open-habits')).click();
     assert.match(await page.locator('.habit-card').textContent(), /Preserve uncertainty/);
     await page.locator('.habit-card').getByRole('button', { name: 'Edit habit' }).click();
     await page.locator('#habit-channel').selectOption('Email');
@@ -247,7 +247,7 @@ async function openTools(page, section) {
     await page.locator('#translate').click(); await until(page, '#translation', 'Fixture translation'); assert.deepEqual(sent.at(-1).preferences, []);
     await page.locator('#translation-tool > summary').click();
     // Import/round-trip unknown scope options without broadening them; malformed imports are atomic.
-    await page.locator('#open-habits').click(); await page.locator('.habit-tools > summary').click();
+    await (await ready(page, '#open-habits')).click(); await page.locator('.habit-tools > summary').click();
     const imported = { version: 2, items: [{ id: 'import-fixture', content: 'Keep uncertainty', enabled: false, confirmed: true, scope: { recipient: 'Friend', channel: 'Letter', target: 'Klingon' }, source: { kind: 'manual', label: 'User supplied test import', eventId: '' }, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }] };
     await page.locator('#import-habits').setInputFiles({ name: 'habits.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(imported)) });
     await until(page, '#habits-list', 'Keep uncertainty');
@@ -316,7 +316,7 @@ async function openTools(page, section) {
       await select(float, 'writing-draft', 0, 6); await settle(float); const first = await floatingState(float);
       const secondIndex = lines.indexOf('Line 1 '); await select(float, 'writing-draft', secondIndex, secondIndex + 6); await settle(float); const second = await floatingState(float);
       assert(second.top - first.top > 25, `Popover follows the second line at ${width}`);
-      const index = lines.indexOf('Line 14 ');
+      const index = lines.indexOf('Line 13 ');
       await float.locator('#writing-draft').evaluate(element => { element.scrollTop = parseFloat(getComputedStyle(element).lineHeight) * 8; });
       await select(float, 'writing-draft', index, index + 7); await settle(float); const middle = await floatingState(float);
       assert(middle.top > middle.draftTop + 10, `Popover is next to a middle line, not above the editor at ${width}`);
@@ -353,6 +353,7 @@ async function openTools(page, section) {
       assert(!(await newcomer.locator('#writing-tools').evaluate(el => el.open)));
       assert(!(await newcomer.locator('#suggestions-panel').isVisible()));
       assert(await newcomer.locator('#writing-draft').isVisible());
+      assert.equal(await newcomer.locator('.quiet-tools, .panel-switch, #flow-check').count(), 0, 'No parallel tool entrances or review tabs');
       assert(await newcomer.locator('#flow-next-action').evaluate(el => el.getBoundingClientRect().bottom <= innerHeight), `Next step is in the first screen at ${width}`);
       for (const id of ['writing-intent', 'extract-intents', 'check-output', 'habit-form']) assert(!(await newcomer.locator(`#${id}`).isVisible()));
       assert(await newcomer.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
@@ -362,12 +363,19 @@ async function openTools(page, section) {
       assert(!(await newcomer.locator('#writing-tools').evaluate(el => el.open)));
       await newcomer.locator('#flow-next-action').click();
       assert(await newcomer.locator('#suggestions-panel').isVisible());
+      const layout = await newcomer.evaluate(() => {
+        const draft = document.getElementById('writing-draft').getBoundingClientRect();
+        const review = document.getElementById('suggestions-panel').getBoundingClientRect();
+        return { draftBottom: draft.bottom, reviewTop: review.top, width: review.width, position: getComputedStyle(document.getElementById('suggestions-panel')).position };
+      });
+      assert(layout.reviewTop >= layout.draftBottom, 'Review follows the draft instead of sitting beside or over it');
+      assert.equal(layout.position, 'static');
       await newcomer.locator('#close-companion').click();
       await select(newcomer, 'writing-draft', 0, 4); await newcomer.locator('#protect-selection').click();
       assert.match(await newcomer.locator('#selection-feedback').textContent(), /Kept exactly/); await (await ready(newcomer, '#writing-undo')).click();
-      await newcomer.locator('#flow-intention').click();
+      await (await ready(newcomer, '#flow-intention')).click();
       assert(!(await newcomer.locator('#writing-tools').evaluate(el => el.open)));
-      assert(!(await newcomer.locator('#writing-channel').isVisible()));
+      assert(await newcomer.locator('#context-panel #intent-panel').isVisible());
       await newcomer.locator('#extract-intents').click();
       await newcomer.locator('[data-confirm-intent]').first().click();
       assert(await newcomer.locator('[data-confirm-intent]').first().evaluate(element => element === document.activeElement));
@@ -379,17 +387,21 @@ async function openTools(page, section) {
       assert(await newcomer.locator('#back-from-intentions').evaluate(element => element === document.activeElement));
       await newcomer.locator('#back-from-intentions').click();
       assert(await newcomer.locator('#writing-draft').evaluate(element => element === document.activeElement));
-      await newcomer.locator('#flow-check').click(); assert(!(await newcomer.locator('#check-output').isVisible()));
+      await newcomer.locator('#flow-next-action').click(); assert(!(await newcomer.locator('#check-output').isVisible()));
       await newcomer.locator('#back-translate').click(); assert(await newcomer.locator('#check-draft-comparison').evaluate(element => element.open));
+      assert.match(await newcomer.locator('#check-intent-reference').textContent(), /Keep tentative plans tentative/);
+      assert(await newcomer.locator('#panel-suggestions').isVisible(), 'Earlier review remains in the same flow');
+      if (width === 1440) await newcomer.locator('#writing-workspace').screenshot({ path: path.join(root, 'preview/continuous-desktop.png'), animations: 'disabled' });
+      if (width === 390) await newcomer.locator('#writing-workspace').screenshot({ path: path.join(root, 'preview/continuous-mobile.png'), animations: 'disabled' });
       await newcomer.locator('[data-mismatch]').first().click(); await newcomer.locator('#repair-writing').click();
       await newcomer.locator('.suggestion-card').getByRole('button', { name: 'Use this expression' }).click();
       assert.match(await newcomer.locator('#decision-result').textContent(), /Applied to your draft/);
       assert.match(await newcomer.locator('#writing-draft').inputValue(), /try to/);
       assert(await newcomer.locator('#decision-result').getByRole('button', { name: 'Check this version' }).evaluate(element => element === document.activeElement));
       if (width === 1440) {
-        await newcomer.locator('#dismiss-memory').click();
+        await (await ready(newcomer, '#dismiss-memory')).click();
         assert.equal(await newcomer.locator('#decision-result [data-remember-candidate]').count(), 0);
-        await (await ready(newcomer, '#writing-undo')).click(); await newcomer.locator('#flow-check').click();
+        await (await ready(newcomer, '#writing-undo')).click(); await newcomer.locator('#flow-next-action').click();
         await newcomer.locator('#back-translate').click(); await newcomer.locator('[data-mismatch]').first().click();
         await newcomer.locator('#repair-writing').click(); await newcomer.locator('.suggestion-card').getByRole('button', { name: 'Use this expression' }).click();
       }
@@ -401,34 +413,55 @@ async function openTools(page, section) {
       if (width === 390) await newcomer.screenshot({ path: path.join(root, 'preview/newcomer-mobile-habit.png'), animations: 'disabled' });
       await newcomer.locator('#habit-form button[type="submit"]').click(); await newcomer.locator('#finish-habit-review').click();
       assert(await newcomer.locator('#writing-draft').evaluate(element => element === document.activeElement));
-      if (width < 750) assert(!(await newcomer.locator('#suggestions-panel').isVisible()), 'Returning from habit review reveals the actual draft');
-      await newcomer.locator('#flow-check').click(); assert.match(await newcomer.locator('#back-translate').textContent(), /updated draft/);
+      assert(await newcomer.locator('#suggestions-panel').isVisible(), 'Returning to writing preserves the inline review');
+      assert.equal(await newcomer.locator('#suggestions-panel').evaluate(el => getComputedStyle(el).position), 'static');
+      await newcomer.locator('#flow-next-action').click(); assert.match(await newcomer.locator('#back-translate').textContent(), /updated draft/);
       await newcomer.locator('#back-translate').click(); await newcomer.locator('#mark-check-reviewed').click();
       assert(await newcomer.locator('#copy-checked-draft').isVisible());
       await newcomer.evaluate(() => { navigator.clipboard.writeText = async text => { window.fixtureCopiedDraft = text; }; });
       await newcomer.locator('#copy-checked-draft').click(); await until(newcomer, '#toast', 'Copied');
       assert.match(await newcomer.evaluate(() => window.fixtureCopiedDraft), /try to/);
-      assert(await newcomer.locator('#toast').evaluate(element => Number(getComputedStyle(element).zIndex) > Number(getComputedStyle(document.getElementById('suggestions-panel')).zIndex || 0) || matchMedia('(min-width:751px)').matches));
+      assert(await newcomer.locator('#toast').evaluate(element => {
+        const rect = element.getBoundingClientRect();
+        return rect.top >= 0 && rect.bottom <= innerHeight && element.contains(document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2));
+      }), 'Copy feedback is visible above the inline document');
       assert.equal(await newcomer.locator('#correction-note').inputValue(), '');
       await newcomer.locator('#return-to-writing').click();
       assert.match(await newcomer.locator('#flow-next-action').textContent(), /Copy my draft/);
       await newcomer.locator('#flow-next-action').click();
       assert.equal(await newcomer.evaluate(() => window.fixtureCopiedDraft), await newcomer.locator('#writing-draft').inputValue());
-      await newcomer.locator('#writing-live-mode').click(); await newcomer.locator('#flow-check').click();
+      await newcomer.locator('#writing-live-mode').click(); await newcomer.locator('#flow-next-action').click();
       assert.match(await newcomer.locator('#snapshot-status').textContent(), /Earlier check/);
       assert(await newcomer.locator('#repair-writing').isDisabled());
       await newcomer.reload(); await newcomer.waitForLoadState('networkidle');
       assert.equal(await newcomer.locator('#writing-draft').inputValue(), '');
-      await newcomer.locator('#open-habits').click(); assert.match(await newcomer.locator('.habit-card').textContent(), /Keep uncertainty/);
+      await (await ready(newcomer, '#open-habits')).click(); assert.match(await newcomer.locator('.habit-card').textContent(), /Keep uncertainty/);
       await newcomer.close();
     }
+    // Optional interpretations can be deferred through the main flow, before or after review.
+    const skip = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    skip.on('pageerror', error => errors.push(error.message));
+    await skip.goto(url); await skip.waitForLoadState('networkidle');
+    await skip.locator('#writing-demo-mode').click();
+    await (await ready(skip, '#flow-intention')).click(); await skip.locator('#extract-intents').click();
+    assert.match(await skip.locator('#back-from-intentions').textContent(), /without unconfirmed/);
+    await skip.locator('#back-from-intentions').click();
+    assert.match(await skip.locator('#flow-next-action').textContent(), /Get suggestions/);
+    assert.match(await skip.locator('#request-input-summary').textContent(), /0 confirmed intention/);
+    await skip.locator('#flow-next-action').click(); assert(await skip.locator('.suggestion-card').isVisible());
+    await (await ready(skip, '#flow-intention')).click(); await skip.locator('#extract-intents').click();
+    await skip.locator('#back-from-intentions').click();
+    assert.match(await skip.locator('#flow-next-action').textContent(), /Check this draft/);
+    assert.match(await skip.locator('#intent-count').textContent(), /0 confirmed/);
+    await skip.locator('#flow-next-action').click(); assert(await skip.locator('#back-translate').isVisible());
+    await skip.close();
     // Storage denied should not break initialization or explicit memory-only save.
     const restricted = await browser.newPage(); const restrictedErrors = [];
     restricted.on('pageerror', error => restrictedErrors.push(error.message));
     await restricted.addInitScript(() => { Storage.prototype.getItem = () => { throw new Error('storage denied'); }; Storage.prototype.setItem = () => { throw new Error('storage denied'); }; });
     await restricted.goto(url); await restricted.waitForLoadState('networkidle');
     assert.equal(await restricted.locator('#writing-draft').inputValue(), '');
-    await restricted.locator('#open-habits').click(); await restricted.locator('#habit-content').fill('Visit-only habit');
+    await (await ready(restricted, '#open-habits')).click(); await restricted.locator('#habit-content').fill('Visit-only habit');
     await restricted.locator('#habit-form button[type="submit"]').click();
     assert.match(await restricted.locator('.habit-card').textContent(), /Visit-only habit/);
     assert.match(await restricted.locator('#habits-status').textContent(), /only for this visit/);

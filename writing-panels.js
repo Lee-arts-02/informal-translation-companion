@@ -1,9 +1,8 @@
 import { $, make, button } from './ui-helpers.js';
-export function renderOptions({ suggestions, intentions, apply, reject, hasDraft = false, check }) {
+export function renderOptions({ suggestions, intentions, apply, reject, hasDraft = false }) {
   $('writing-suggestions').replaceChildren(); $('suggestion-count').textContent = `${suggestions.length} to consider`;
   if (!suggestions.length) {
-    $('writing-suggestions').append(make('p', hasDraft ? 'No pending edits. You can keep your wording, ask for another review, or check the meaning.' : 'Start with your words. We’ll look at one small change at a time.', 'empty-suggestions'));
-    if (hasDraft && check) $('writing-suggestions').append(button('Check the current draft', check));
+    $('writing-suggestions').append(make('p', hasDraft ? 'No pending edits. Continue below to check your meaning, or keep writing.' : 'Start with your words. We’ll look at one small change at a time.', 'help'));
     return;
   }
   suggestions.forEach((item, index) => {
@@ -26,8 +25,8 @@ export function renderDecision({ title, detail, remember, check, write }) {
   const result = $('decision-result'); result.replaceChildren(make('strong', title), make('p', detail)); result.hidden = false;
   const actions = make('div', '', 'suggestion-actions');
   actions.append(button('Check this version', check, 'button small primary'));
-  if (remember) { const action = button('Review a habit · optional', remember); action.dataset.rememberCandidate = 'true'; actions.append(action); }
-  actions.append(button('Keep writing', write)); result.append(actions);
+  if (remember) { const action = button('Review a habit · optional', remember, 'text-button'); action.dataset.rememberCandidate = 'true'; actions.append(action); }
+  actions.append(button('Keep writing', write, 'text-button')); result.append(actions);
   return actions.querySelector('button');
 }
 export function renderEvents(events) {

@@ -15,7 +15,7 @@ import { initSelectionPopover } from './selection-popover.js';
 export function initWriting({ getConnection, notify }) {
   let session = createSession(), demo = false, sample = null, suggestions = [], selection = null;
   let epoch = 0, controller = null, preview = null, snapshot = null, flagged = '', events = [], candidate = null;
-  let lastInputs = null, guide = null, reviewedId = null;
+  let lastInputs = null, guide = null, reviewedId = null, intentionsDeferred = false;
   const contextIds = ['writing-intent', 'writing-avoid', 'writing-recipient', 'writing-relationship', 'writing-channel', 'writing-target', 'explanation-language', 'writing-scope', 'back-language', 'allow-mix'];
   const actionIds = ['analyze-writing', 'starting-draft', 'check-meaning', 'back-translate', 'extract-intents', 'repair-writing'];
   function fail(message = '') { for (const id of ['writing-error', 'companion-error']) { $(id).textContent = message; $(id).hidden = !message; } }
@@ -65,10 +65,12 @@ export function initWriting({ getConnection, notify }) {
   }
   function refreshFlow() {
     $('connection-hint').hidden = demo || Boolean(getConnection().apiKey);
+    const hasReview = Boolean(session.feedback.length || events.some(item =>
+      item.kind === 'starting-draft-accepted' || ['ai-request', 'demo-request'].includes(item.kind) && item.note === 'analyze'));
     guide?.refresh({ text: session.text, goal: $('writing-intent').value, avoid: $('writing-avoid').value, intentions: intents.get(),
       habits: voice.get().enabled ? memory.matched() : [], hasSample: Boolean(voice.get().enabled && voice.get().sample),
-      snapshot, fresh: snapshotCurrent(snapshot, snapshotInput()), reviewed: checkReviewed(snapshot, snapshotInput(), reviewedId),
-      suggestions: suggestions.length, candidate, lastInputs, signature: signature(), revision: session.revision, demo, connected: Boolean(getConnection().apiKey) });
+      snapshot, fresh: snapshotCurrent(snapshot, snapshotInput()), reviewed: checkReviewed(snapshot, snapshotInput(), reviewedId), intentionsDeferred,
+      suggestions: suggestions.length, hasReview, candidate, lastInputs, signature: signature(), revision: session.revision, demo, connected: Boolean(getConnection().apiKey) });
   }
   function updateContext() { $('context-summary').textContent = [context().recipient, context().channel, $('writing-intent').value].filter(Boolean).join(' · ').slice(0, 100) || 'Add a little context, if you like'; }
   function invalidate() {
@@ -101,9 +103,9 @@ export function initWriting({ getConnection, notify }) {
   }
   function rememberCandidate(data) { memory.open({ ...data, scope: data.scope || context() }); }
   function openCheck() { closeWritingTools(); showPanel('check'); $('back-translate').focus(); }
-  function continueWriting() { closeWritingTools(); $('suggestions-panel').classList.remove('is-open'); $('writing-draft').focus(); }
+  function continueWriting() { closeWritingTools(); $('writing-draft').focus(); }
   function renderSuggestions() {
-    renderOptions({ suggestions, intentions: intents.get(), apply, reject, hasDraft: Boolean(session.text.trim()), check: openCheck });
+    renderOptions({ suggestions, intentions: intents.get(), apply, reject, hasDraft: Boolean(session.text.trim()) });
   }
   function apply(item, replacement, reason) {
     try {
@@ -150,6 +152,7 @@ export function initWriting({ getConnection, notify }) {
       $('last-habits').textContent = `${demo ? 'Demo inputs' : 'Last request inputs'} (${action}): ${habits.map(x => x.content).join(' · ') || 'no saved habits'}${action === 'back' ? '; original, intent and voice sample were excluded.' : ''}`;
       log({ kind: demo ? 'demo-request' : 'ai-request', note: action, habits });
       if (action === 'intentions') {
+        intentionsDeferred = false;
         intents.propose(output.intentions); $('writing-status').textContent = 'These are tentative interpretations. Confirm, edit or remove what you like.';
       } else if (action === 'analyze' || action === 'repair') {
         $('habit-conflicts').replaceChildren();
@@ -178,6 +181,7 @@ export function initWriting({ getConnection, notify }) {
     finally { if (requestEpoch === epoch) { controller = null; busy(false); } }
   }
   function resetWorkspace(text = '') {
+    intentionsDeferred = false;
     cancel(); session = createSession(text); selection = null; snapshot = null; reviewedId = null; events = []; flagged = ''; lastInputs = null;
     $('last-habits').replaceChildren(); $('check-text').value = ''; $('correction-note').value = ''; $('flagged-text').textContent = '';
     intents.reset(); memory.resetSession(); invalidate(); renderEvents(events); showPanel('suggestions', false);
@@ -197,12 +201,12 @@ export function initWriting({ getConnection, notify }) {
     }, 'writing-example'); item.dataset.writingDemo = value.id;
     item.append(make('span', value.culture, 'mono'), make('strong', value.title), make('span', 'Try this moment ↗')); $('writing-examples').append(item);
   }
-  document.querySelectorAll('[data-panel]').forEach(node => node.addEventListener('click', () => { showPanel(node.dataset.panel); if (node.dataset.panel === 'history') renderEvents(events); }));
   $('open-companion').addEventListener('click', () => showPanel('suggestions'));
-  $('close-companion').addEventListener('click', continueWriting);
+  $('close-companion').addEventListener('click', () => { $('suggestions-panel').classList.remove('is-open'); continueWriting(); });
   $('open-history').addEventListener('click', () => { closeWritingTools(); showPanel('history'); renderEvents(events); });
   $('suggestions-panel').addEventListener('keydown', e => { if (e.key === 'Escape' && matchMedia('(max-width:750px)').matches) { e.preventDefault(); $('close-companion').click(); } });
-  for (const id of ['open-habits', 'writing-style']) $(id).addEventListener('click', () => memory.open());
+  $('open-habits').addEventListener('click', () => memory.open());
+  $('edit-check-intent').addEventListener('click', () => { expandWritingTools('context-panel'); $('writing-intent').focus(); });
   $('use-writing-habits').checked = voice.get().enabled;
   $('use-writing-habits').addEventListener('change', () => voice.setEnabled($('use-writing-habits').checked));
   $('remember-correction').addEventListener('click', () => { if (candidate) rememberCandidate(candidate); });
@@ -213,7 +217,12 @@ export function initWriting({ getConnection, notify }) {
   $('open-check').addEventListener('click', openCheck);
   $('connect-writing').addEventListener('click', () => $('open-settings').click());
   $('first-example').addEventListener('click', () => $('writing-demo-mode').click());
-  $('back-from-intentions').addEventListener('click', () => { $('intent-panel').open = false; continueWriting(); $('writing-status').textContent = 'Your confirmed instructions will guide your next review. Your draft is unchanged.'; });
+  $('back-from-intentions').addEventListener('click', () => {
+    intentionsDeferred = true;
+    if (intents.get().some(item => !item.confirmed)) log({ kind: 'intent-review-deferred', note: 'Writer continued without confirming pending interpretations; they remain excluded from writing requests.' });
+    continueWriting(); refreshFlow();
+    $('writing-status').textContent = 'Only your confirmed instructions will guide writing. Unconfirmed interpretations are left out.';
+  });
   $('mark-check-reviewed').addEventListener('click', () => {
     if (!snapshotCurrent(snapshot, snapshotInput())) return;
     const previousNote = $('correction-note').value.trim();
@@ -303,7 +312,7 @@ export function initWriting({ getConnection, notify }) {
   $('save-peer').addEventListener('click', () => { const note = $('peer-notes').value.trim(); if (!note) return; session = recordFeedback(session, 'peer', note); log({ kind: 'human-feedback', note }); $('peer-notes').value = ''; $('peer-dialog').close(); invalidate(); updateSession(); });
   window.addEventListener('nuancebridge:settings', invalidate); window.addEventListener('pagehide', cancel);
   guide = initFlowGuide({ editGoal: () => { expandWritingTools('context-panel'); $('writing-intent').focus(); },
-    reviewIntentions: () => { expandWritingTools('intent-panel'); (document.querySelector('.intent-card button') || $('new-intent')).focus(); },
+    reviewIntentions: () => { intentionsDeferred = false; expandWritingTools('intent-panel'); refreshFlow(); (document.querySelector('.intent-card button') || $('new-intent')).focus(); },
     write: () => { if (suggestions.length) { showPanel('suggestions'); document.querySelector('.suggestion-card button')?.focus(); } else continueWriting(); },
     check: openCheck, refine: () => run('analyze'), copy: () => $('copy-draft').click() });
   initSelectionPopover(); updateSession(); renderSuggestions(); renderEvents(events);

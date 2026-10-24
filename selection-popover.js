@@ -12,8 +12,7 @@ function position() {
   if (!activeRange || dismissed) { hide(); return; }
   const draft = $('writing-draft'), toolbar = $('selection-workbench');
   const anchor = selectionRect(draft, activeRange.start, activeRange.end);
-  const companionOpen = matchMedia('(max-width:750px)').matches && $('suggestions-panel').classList.contains('is-open');
-  if (!anchor || companionOpen || document.querySelector('dialog[open]')) { hide(); return; }
+  if (!anchor || document.querySelector('dialog[open]')) { hide(); return; }
   if (toolbar.showPopover) { if (!toolbar.matches(':popover-open')) toolbar.showPopover(); }
   else { if (toolbar.parentElement !== document.body) document.body.append(toolbar); toolbar.classList.add('popover-fallback-open'); }
   const view = window.visualViewport;

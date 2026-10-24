@@ -11,10 +11,10 @@ export function download(name, content, type = 'text/plain;charset=utf-8') {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 export function expandWritingTools(section) {
-  if (section === 'intent-panel') {
+  if (section === 'intent-panel' || section === 'context-panel') {
     $('writing-tools').open = false;
-    $('suggestions-panel').classList.remove('is-open');
-    $('intent-panel').hidden = false; $('intent-panel').open = true;
+    $('context-panel').open = true;
+    if (section === 'intent-panel') { $('intent-panel').hidden = false; $('intent-panel').open = true; }
     return;
   }
   $('intent-panel').hidden = true; $('intent-panel').open = false;
@@ -23,15 +23,18 @@ export function expandWritingTools(section) {
 }
 export function closeWritingTools() {
   $('writing-tools').open = false;
+  $('context-panel').open = false;
   $('intent-panel').hidden = true; $('intent-panel').open = false;
 }
 export function showPanel(name, open = true) {
-  if (open) closeWritingTools();
-  for (const value of ['suggestions', 'check', 'history']) {
-    $(`panel-${value}`).hidden = value !== name;
-    const tab = document.querySelector(`[data-panel="${value}"]`);
-    tab.classList.toggle('active', value === name); tab.setAttribute('aria-pressed', String(value === name));
+  if (!open) {
+    for (const value of ['suggestions', 'check', 'history']) $(`panel-${value}`).hidden = true;
+    $('suggestions-panel').classList.remove('is-open');
+    return;
   }
-  $('suggestions-panel').classList.toggle('is-open', open);
-  if (open && matchMedia('(max-width:750px)').matches) $('close-companion')?.focus();
+  closeWritingTools();
+  $(`panel-${name}`).hidden = false;
+  if (name === 'history') { $('writing-tools').open = true; $('panel-history').scrollIntoView({ block: 'start' }); }
+  else $('suggestions-panel').classList.add('is-open');
+  const section = $(`panel-${name}`); section.tabIndex = -1; section.focus();
 }

@@ -1,0 +1,12 @@
+# One continuous writing workspace
+
+User requirement: retain the writing/review workflow, eliminate disconnected left/right surfaces and three unexplained parallel entrances. Desktop and phone use the same inline document flow.
+
+Design: optional context/intention disclosure before the editor; one contextual next action after the editor; returned suggestions and cross-language check unfold below that same draft. Reveal stages progressively and retain previous stages instead of switching tabs. Check includes explicit current intention reference; no inferred intent is presented as user fact. Manual editing and returning from habit review preserve the inline review. A separate explicit Hide review control can collapse it. Secondary controls and history remain in More tools; habit saving remains opt-in. No automatic paid requests on disclosure or text changes.
+
+Verification: add first-user assertions for a single-column, non-overlay review with no three-entry row, retained suggestions/check, contextual next action after acceptance, actual selected-text popover on phones, and intent-reference freshness. Preserve source-blind backtranslation, range checks, version freshness, profile scoping, explicit saving, undo and privacy regressions. Independent code review before publishing.
+
+Implemented: removed the three-entry row and review tabs; context/intention is nested before the editor; review/check accumulate inline; history and habit management moved to secondary tools; explicit intent reference added to checking; explicit Hide review separated from returning to writing. Post-review primary advances to meaning checking. Pending AI interpretations can be deferred without confirming or sending them. The main progression remembers a completed review across later intention requests.
+
+Review findings resolved: visible focus when opening an inline section from collapsing controls; 320×700 first-screen spacing; optional intention deferral. Selected-line regression fixture updated from an offscreen line to a visible line in the shorter phone editor, with real geometry checked. Copy feedback test now checks hit-testing in the viewport rather than comparing overlay z-index values.
+Final verification: npm run check, all 46 unit tests, and full authored/fixture browser regression passed at desktop/390/320 widths, including primary-only intention deferral before/after review. Independent reviewer approved after checking 320x700 geometry and confirmation filtering.
