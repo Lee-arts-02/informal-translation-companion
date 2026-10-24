@@ -14,6 +14,8 @@ Validation checklist:
 - [x] Selected-text controls precede the editor, become compact/sticky on selection, preserve selection and show outcomes.
 - [x] Existing Unicode protection, preview, undo, translator and memory import/export behavior pass regression tests.
 - [x] Inspect desktop/mobile screenshots and obtain independent review.
-- [ ] Push and verify deployment.
+- [x] Push and verify deployment.
 
 Evidence: new state tests were observed failing before implementation. All 42 unit tests and JS syntax checks pass. Expanded installed-Chrome suite passes, including unconfirmed/confirmed request payloads, leaving candidate review without saving, scope presets, explicit saved/visit-only outcomes, reviewed-state invalidation and actual toolbar geometry at 1440/390/320px. Desktop, phone, check panel and candidate-habit screenshots inspected. Independent review approved after checking sticky container behavior and visit-only/dismissal states. API calls in browser tests are controlled fixtures, not model-quality evaluations. User PDF untouched.
+
+Release evidence: app commit `6201d5afa35147f6b992fcda5f749723f775c50d` pushed to main. GitHub verification/Pages deployment succeeded at https://github.com/Lee-arts-02/informal-translation-companion/actions/runs/40132799735 ; Vercel commit status succeeded. The complete browser suite passed against https://nuancebridge.vercel.app/ . Temporary layout files were removed individually. Subsequent verification-note changes do not alter deployed app code.
