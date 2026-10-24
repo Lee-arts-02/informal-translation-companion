@@ -1,7 +1,7 @@
 import { $, make, button, download } from './ui-helpers.js';
 import { makeMemory, loadMemories, saveMemories, matchMemories, importMemories, exportMemories } from './memory-store.js';
 
-export function initMemories({ context, changed, event, notify, enabled = () => true }) {
+export function initMemories({ context, changed, event, notify, enabled = () => true, returnToDraft = () => $('writing-draft').focus() }) {
   let storage, items = [], exclusions = [], editing = null, source = null;
   let loadIssue = '';
   try { storage = localStorage; items = loadMemories(storage); }
@@ -12,11 +12,11 @@ export function initMemories({ context, changed, event, notify, enabled = () => 
   const dialog = make('dialog'); dialog.id = 'habits-dialog'; dialog.setAttribute('aria-labelledby', 'habits-title');
   dialog.innerHTML = `<div class="dialog-heading"><h2 id="habits-title">Your expression habits</h2><button type="button" id="close-habits" class="close-button" aria-label="Close habits">×</button></div>
     <p class="dialog-copy">A habit can guide future writing. Confirming an intention or accepting an edit does not save one. Everything here is stored only on this browser.</p>
-    <p id="habits-status" class="help" role="status"></p><div id="habit-save-result" class="habit-save-result" role="status"></div><div id="habit-review-banner" class="habit-review-banner" hidden><strong>Not saved yet — review before remembering</strong><p>Turn this correction into a reusable instruction. Choose where it applies, or return to this draft without saving.</p></div>
+    <p id="habits-status" class="help" role="status"></p><div id="habit-save-result" class="habit-save-result" role="status"></div><div id="habit-review-banner" class="habit-review-banner" hidden><strong>Not saved yet — review before remembering</strong><p>Choose what to repeat next time and where it applies. You can leave without saving.</p></div>
     <form id="habit-form"><h3 id="habit-form-title">Add a habit</h3><label>1 · What should AI remember?<textarea id="habit-content" required maxlength="400" rows="2" placeholder="e.g. When I describe a tentative plan, preserve uncertainty."></textarea></label>
-    <p class="help">Write a reusable instruction rather than “I disliked this sentence.” You can edit the candidate freely.</p><p class="field-label">2 · When should it apply?</p><div class="habit-scope-presets"><button id="habit-use-context" type="button" class="button small outline">Use this writing context</button><button id="habit-use-any" type="button" class="button small outline">Any writing context</button></div>
-    <div class="habit-scope"><label>Reader label<input id="habit-recipient" maxlength="150" placeholder="Any reader"></label><label>Channel<select id="habit-channel"><option value="">Any channel</option><option>Text message</option><option>Email</option><option>Social media</option><option>Personal writing</option><option>Creative writing</option><option>Community forum</option></select></label><label>Writing language<select id="habit-target"><option value="">Any language</option></select></label></div>
-    <p id="habit-scope-preview" class="habit-scope-preview" aria-live="polite"></p><p id="habit-source" class="help"></p><div class="dialog-actions"><button id="cancel-habit-edit" type="button" class="button outline">Clear form</button><button class="button primary" type="submit">Save this habit</button></div></form>
+    <p class="help">Describe what you want repeated next time. You can edit this freely.</p><p class="field-label">2 · When should it apply?</p><div class="habit-scope-presets"><button id="habit-use-context" type="button" class="button small outline">Use this writing context</button><button id="habit-use-any" type="button" class="button small outline">Any writing context</button></div>
+    <p id="habit-scope-preview" class="habit-scope-preview" aria-live="polite"></p><details id="habit-scope-editor"><summary>Adjust reader, channel or language</summary><div class="habit-scope"><label>Reader label<input id="habit-recipient" maxlength="150" placeholder="Any reader"></label><label>Channel<select id="habit-channel"><option value="">Any channel</option><option>Text message</option><option>Email</option><option>Social media</option><option>Personal writing</option><option>Creative writing</option><option>Community forum</option></select></label><label>Writing language<select id="habit-target"><option value="">Any language</option></select></label></div></details>
+    <p id="habit-source" class="help"></p><div class="dialog-actions"><button id="cancel-habit-edit" type="button" class="button outline">Clear form</button><button class="button primary" type="submit">Save this habit</button></div></form>
     <button id="finish-habit-review" type="button" class="button outline">Back to my draft · no save required</button><details id="saved-habits-section" open><summary>My saved habits</summary><div id="habits-list"></div></details>
     <details class="habit-tools"><summary>Samples, backup & storage</summary><button id="open-voice-example" class="text-button">Manage my explicitly saved writing sample</button><button id="export-habits" class="text-button">Export habits</button><label>Import habits (replaces this list)<input id="import-habits" type="file" accept="application/json,.json"></label><button id="clear-habits" class="text-button">Clear all habits</button></details>`;
   document.body.append(dialog);
@@ -42,7 +42,8 @@ export function initMemories({ context, changed, event, notify, enabled = () => 
       field.value = value;
     }
     $('habit-source').textContent = source ? `Source to be saved: ${source.label}` : 'Source: a habit explicitly added by you.';
-    $('habit-form-title').textContent = candidate ? 'Review before remembering' : 'Add a habit';
+    $('habit-form-title').textContent = candidate ? 'Your habit' : 'Add a habit';
+    $('habit-scope-editor').open = !candidate;
     $('habit-review-banner').hidden = !candidate;
     $('habit-save-result').textContent = '';
     previewScope();
@@ -58,6 +59,7 @@ export function initMemories({ context, changed, event, notify, enabled = () => 
       const actions = make('div', '', 'suggestion-actions');
       actions.append(button('Edit habit', () => {
         reset({ content: item.content, scope: item.scope, source: item.source }); editing = item.id;
+        $('habit-scope-editor').open = true;
         $('habit-form-title').textContent = 'Edit this habit'; $('habit-content').focus();
       }), button(item.enabled ? 'Pause' : 'Enable', () => {
         items = items.map(x => x.id === item.id ? { ...x, enabled: !x.enabled, updatedAt: new Date().toISOString() } : x);
@@ -96,7 +98,7 @@ export function initMemories({ context, changed, event, notify, enabled = () => 
     } catch (error) { $('habits-status').textContent = error.message; }
   });
   $('close-habits').addEventListener('click', () => dialog.close());
-  $('finish-habit-review').addEventListener('click', () => { dialog.close(); $('writing-draft').focus(); });
+  $('finish-habit-review').addEventListener('click', () => { dialog.close(); returnToDraft(); });
   for (const key of ['recipient', 'channel', 'target']) $(`habit-${key}`).addEventListener('input', previewScope);
   $('habit-use-context').addEventListener('click', () => { for (const [key, value] of Object.entries(context())) $(`habit-${key}`).value = value; previewScope(); });
   $('habit-use-any').addEventListener('click', () => { for (const key of ['recipient', 'channel', 'target']) $(`habit-${key}`).value = ''; previewScope(); });

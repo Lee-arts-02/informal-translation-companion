@@ -3,6 +3,7 @@ import { makeIntent, reviseIntent } from './intent-state.js';
 
 export function initIntentPanel({ changed, event, fail, remember, getRevision }) {
   let items = [];
+  function focusNext() { (document.querySelector('[data-confirm-intent]') || $('back-from-intentions')).focus(); }
   function render() {
     $('intent-count').textContent = items.length ? `${items.length} intentions · ${items.filter(x => x.confirmed).length} confirmed` : 'Add your own or let AI suggest';
     $('intent-list').replaceChildren();
@@ -13,16 +14,19 @@ export function initIntentPanel({ changed, event, fail, remember, getRevision })
       card.append(make('p', item.confirmed ? 'Used for this draft only. Saving a future habit is a separate choice.' : 'Check this against your meaning. Confirm to use it, edit it, or remove it.', 'help intent-scope-note'));
       if (item.evidence) card.append(make('p', `Source wording: “${item.evidence}”${Number.isInteger(item.evidenceRevision) ? ` · revision ${item.evidenceRevision}` : ''}`, 'help'));
       const actions = make('div', '', 'suggestion-actions');
-      if (!item.confirmed) actions.append(button('That’s what I mean', () => {
-        items = items.map(x => x.id === item.id ? { ...x, confirmed: true } : x); event({ kind: 'intent-confirmed', note: item.content }); render(); changed();
-      }));
+      if (!item.confirmed) {
+        const confirm = button('That’s what I mean', () => {
+          items = items.map(x => x.id === item.id ? { ...x, confirmed: true } : x); event({ kind: 'intent-confirmed', note: item.content }); render(); changed();
+          focusNext();
+        }); confirm.dataset.confirmIntent = item.id; actions.append(confirm);
+      }
       const edit = make('details', '', 'intent-edit'); edit.append(make('summary', 'Edit'));
       const field = make('input'); field.value = item.content; field.maxLength = 400; field.setAttribute('aria-label', 'Edit intention');
       edit.append(field, button('Use my wording', () => {
-        try { const updated = reviseIntent(item, field.value); items = items.map(x => x.id === item.id ? updated : x); event({ kind: 'intent-edited', note: updated.content }); render(); changed(); }
+        try { const updated = reviseIntent(item, field.value); items = items.map(x => x.id === item.id ? updated : x); event({ kind: 'intent-edited', note: updated.content }); render(); changed(); focusNext(); }
         catch (error) { fail(error.message); }
       })); actions.append(edit);
-      actions.append(button('Remove', () => { items = items.filter(x => x.id !== item.id); event({ kind: 'intent-removed', note: item.content }); render(); changed(); }));
+      actions.append(button('Remove', () => { items = items.filter(x => x.id !== item.id); event({ kind: 'intent-removed', note: item.content }); render(); changed(); focusNext(); }));
       if (item.confirmed) actions.append(button('Remember for later', () => remember({ content: item.content, source: { kind: 'intention', label: `Explicitly saved intention: ${item.content}`, eventId: '' } })));
       card.append(actions); $('intent-list').append(card);
     });
@@ -42,5 +46,6 @@ export function initIntentPanel({ changed, event, fail, remember, getRevision })
       const additions = proposed.filter(item => !items.some(x => x.content === item.content));
       items = [...items, ...additions.map(x => ({ ...x, evidenceRevision: getRevision() }))].slice(0, 12);
       render(); $('intent-panel').open = true; changed();
+      focusNext();
     } };
 }

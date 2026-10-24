@@ -22,6 +22,14 @@ Language checks guide the writer through **read → decide → refine**. The cur
 
 On phones the companion opens as a dismissible bottom panel, preserving the draft. Context, intention details, suggestion explanations and additional reader perspectives use progressive disclosure.
 
+## First visit and next steps
+
+The entry hint distinguishes the free authored example from personal live use before requesting an API key. Intention confirmation, editing and removal retain keyboard focus; **Back to writing** returns directly to the draft. After accepting or keeping wording, the visible companion panel shows the outcome and offers **Check this version**, an optional habit review when relevant, and **Keep writing**. This also keeps habit saving reachable inside the phone panel.
+
+The checking form reveals results only after a check exists, expands the current-draft comparison, and labels stale checks with an update action. Marking a version as matching resolves the active mismatch note (retained in the session record) and exposes a copy action. Authored checks retain their source label and become stale when switching to live mode. Curated examples disclose which repair paths they support instead of offering nonfunctional feedback buttons.
+
+Habit review shows the actual matching scope before optional detailed fields. Save controls remain reachable while scrolling; returning from the dialog reveals the draft rather than focusing it behind the phone sheet. Popup touch targets and copy feedback visibility were also checked. These changes were verified through fresh-context desktop and touch-mobile browser walkthroughs, not a participant usability study or physical-device keyboard evaluation.
+
 ## Words, instructions and protected expressions
 
 Select a passage to **keep these words**, **find an expression**, or mark **this is a note to AI**. Moving a note out of the final draft requires confirmation. Undo restores moved notes and their prior task instructions unless those instructions were subsequently edited.

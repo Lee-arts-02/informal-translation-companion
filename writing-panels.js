@@ -1,7 +1,11 @@
 import { $, make, button } from './ui-helpers.js';
-export function renderOptions({ suggestions, intentions, apply, reject }) {
+export function renderOptions({ suggestions, intentions, apply, reject, hasDraft = false, check }) {
   $('writing-suggestions').replaceChildren(); $('suggestion-count').textContent = `${suggestions.length} to consider`;
-  if (!suggestions.length) { $('writing-suggestions').append(make('p', 'Start with your words. We’ll look at one small change at a time.', 'empty-suggestions')); return; }
+  if (!suggestions.length) {
+    $('writing-suggestions').append(make('p', hasDraft ? 'No pending edits. You can keep your wording, ask for another review, or check the meaning.' : 'Start with your words. We’ll look at one small change at a time.', 'empty-suggestions'));
+    if (hasDraft && check) $('writing-suggestions').append(button('Check the current draft', check));
+    return;
+  }
   suggestions.forEach((item, index) => {
     const card = make('article', '', 'suggestion-card');
     card.append(make('h4', item.correction ? 'A focused meaning repair' : `A small possibility · ${index + 1}`), make('span', 'Current wording', 'field-label'), make('del', item.original, 'suggestion-before'));
@@ -17,6 +21,14 @@ export function renderOptions({ suggestions, intentions, apply, reject }) {
     actions.append(button('Use this expression', () => apply(item, field.value, feedback.value), 'button small primary'), button('Make it my own', () => { field.readOnly = false; field.focus(); }), button('Keep my wording', () => reject(item, feedback.value)));
     card.append(actions); $('writing-suggestions').append(card);
   });
+}
+export function renderDecision({ title, detail, remember, check, write }) {
+  const result = $('decision-result'); result.replaceChildren(make('strong', title), make('p', detail)); result.hidden = false;
+  const actions = make('div', '', 'suggestion-actions');
+  actions.append(button('Check this version', check, 'button small primary'));
+  if (remember) { const action = button('Review a habit · optional', remember); action.dataset.rememberCandidate = 'true'; actions.append(action); }
+  actions.append(button('Keep writing', write)); result.append(actions);
+  return actions.querySelector('button');
 }
 export function renderEvents(events) {
   $('revision-events').replaceChildren();

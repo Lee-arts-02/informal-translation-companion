@@ -79,7 +79,7 @@ export function demoReview(action, session, sample, language = 'English') {
     { content: chinese ? `避免：${sample.avoid}` : `Avoid: ${sample.avoid}`, evidence: sample.avoid, category: 'tone' },
   ], session) };
   if (action === 'repair' && sample.id !== 'promise') throw new Error('The authored repair journey is in the “尽量” example. Use live mode for other repairs.');
-  if (action === 'repair' && !/尽量|保证|承诺|try|uncertain|promise|guarantee/i.test(session.correction || '')) throw new Error('This authored repair demonstrates preserving uncertainty. Switch to live mode for other feedback.');
+  if (action === 'repair' && !/尽量|保证|承诺|try|uncertain|promise|guarantee|commitment/i.test(session.correction || '')) throw new Error('This authored repair demonstrates preserving uncertainty. Switch to live mode for other feedback.');
   if (action === 'reflect') return {
     meaning: chinese ? '这是演示说明，不是实时判断。请比较原稿与当前草稿，特别检查承诺、情绪和受保护表达。' : 'Authored demo guidance, not a live assessment: compare the original and current draft for promises, emotion, and protected expressions.',
     reader: chinese ? '读者的理解可能不同。可以询问对方，或邀请朋友反馈；不要把文化背景当成固定规则。' : 'Readers may interpret this differently. Ask your reader or invite a friend; cultural background does not determine an individual response.',

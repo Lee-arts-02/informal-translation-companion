@@ -1,0 +1,13 @@
+# Newcomer walkthrough and direct usability fixes
+
+Walk the complete app in fresh desktop and phone contexts. Inspect entry without API access, selection popup, intention confirmation, check → repair → review, and explicitly saving a scoped habit. This is a heuristic walkthrough with controlled demo/API fixtures, not a participant usability study.
+
+Focus: expose the free demo/live-key choice before a surprise settings dialog; make intention confirmation lead back to writing without losing keyboard focus; replace misleading post-edit empty states; keep repair feedback and next actions inside the visible mobile panel; make current-language comparison/rechecking legible; improve phone touch targets and habit save reachability. Preserve user control, no automatic durable memory, source-blind checks and version safety.
+
+Validate fixes using new-user regression coverage plus existing state/provider/browser tests, inspect desktop and phone screenshots, independent code review, then publish and verify the online app. Keep the unrelated untracked user PDF untouched.
+
+Observed baseline on the deployed app in fresh 1440/390 contexts: confirming an intention left BODY focused; accepting repair moved focus behind the phone sheet to analyze-writing, showed “Start with your words” despite a populated draft, and left the optional memory prompt behind the sheet. Captured screenshots and DOM state before editing.
+
+Implemented: clear free-demo/personal-key entry and a compact empty guide; focus restoration for confirming/editing/removing intentions plus a back action; truthful no-pending-edits state; in-panel decision and optional memory actions; staged language checks with current-draft comparison/recheck labels and resolved-note handling; explicit authored/live check source isolation; supported authored commitment feedback chip; visible scope summary with optional editing; reachable mobile save/return and larger popup targets; copy toast above the sheet. Independent review also caught a dismissed-candidate callback, which is now removed on dismissal and captures stable data.
+
+Verification: 46 unit tests and syntax checks pass. Expanded browser suite includes complete fresh journeys at 1440/390/320 with touch emulation on phone sizes, selection/protection/undo, intention edit/remove focus, actual mismatch chip, repair outcome, dismissed-candidate regression, scoped saving, revealed draft after dialog, recheck/copy feedback, persistence and demo→live snapshot invalidation. Desktop/mobile repair and habit screenshots inspected; not physical-device testing. No paid model calls; all live test requests use controlled fixtures. Independent reviewer approved after focus/dismissal fixes.

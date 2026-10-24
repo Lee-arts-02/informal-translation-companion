@@ -6,7 +6,7 @@ import { initMemories } from './memory-ui.js';
 import { initIntentPanel } from './intent-ui.js';
 import { addEvent, makeSnapshot, snapshotCurrent, checkReviewed } from './workflow-state.js';
 import { initWritingVoice } from './writing-voice.js';
-import { renderOptions, renderEvents } from './writing-panels.js';
+import { renderOptions, renderEvents, renderDecision } from './writing-panels.js';
 import { renderSelection } from './selection-ui.js';
 import { initFlowGuide } from './flow-ui.js';
 import { confirmedIntentions } from './intent-state.js';
@@ -30,7 +30,7 @@ export function initWriting({ getConnection, notify }) {
   for (const id of ['writing-target', 'back-language']) $(id).replaceChildren(...[...$('target').options].map(x => x.cloneNode(true)));
   $('back-language').value = 'Chinese (Simplified)';
   const voice = initWritingVoice(() => invalidate());
-  const memory = initMemories({ context, changed: () => invalidate(), event: log, notify, enabled: () => voice.get().enabled });
+  const memory = initMemories({ context, changed: () => invalidate(), event: log, notify, enabled: () => voice.get().enabled, returnToDraft: continueWriting });
   const intents = initIntentPanel({ changed: () => invalidate(), event: log, fail, remember: rememberCandidate, getRevision: () => session.revision });
   function inputData() {
     const habits = voice.get().enabled ? memory.matched() : [];
@@ -41,21 +41,29 @@ export function initWriting({ getConnection, notify }) {
       voiceSamples: voice.get().enabled && voice.get().sample ? [voice.get().sample] : [] };
   }
   function signature() {
-    return JSON.stringify({ context: contextIds.map(id => $(id).type === 'checkbox' ? $(id).checked : $(id).value), intentions: confirmedIntentions(intents.get()), habits: memory.matched(), voice: voice.get() });
+    return JSON.stringify({ mode: demo ? 'demo' : 'live', context: contextIds.map(id => $(id).type === 'checkbox' ? $(id).checked : $(id).value), intentions: confirmedIntentions(intents.get()), habits: memory.matched(), voice: voice.get() });
   }
   function snapshotInput() { return { text: session.text, revision: session.revision, backLanguage: $('back-language').value, signature: signature() }; }
   function refreshSnapshot() {
+    const limitedDemo = demo && sample?.id !== 'promise';
+    $('check-demo-hint').hidden = !demo;
+    $('check-demo-hint').textContent = limitedDemo ? 'This authored example shows a language view. Choose the “尽量” example for a guided repair, or use My own draft with your API key for other feedback.' : 'Authored example: try “Too much commitment” or explain that “尽量” is not a guarantee. Other feedback needs live mode.';
+    document.querySelectorAll('[data-mismatch]').forEach(node => { node.disabled = demo && (limitedDemo || !node.dataset.mismatch.includes('commitment')); });
+    $('check-output').hidden = !snapshot;
+    $('copy-checked-draft').hidden = !checkReviewed(snapshot, snapshotInput(), reviewedId);
     $('check-current-draft').textContent = session.text || 'Your current draft will appear here.';
-    if (!snapshot) { $('snapshot-status').textContent = 'First, create a view in a familiar language. Your draft will stay unchanged.'; $('snapshot-status').classList.remove('stale'); $('repair-writing').disabled = true; $('mark-check-reviewed').disabled = true; $('check-reviewed-status').textContent = ''; $('repair-help').textContent = 'Create a language check, then describe any mismatch. Nothing changes until you accept a fix.'; refreshFlow(); return; }
+    if (!snapshot) { $('back-translate').textContent = 'Create language check'; $('snapshot-status').textContent = 'First, create a view in a familiar language. Your draft will stay unchanged.'; $('snapshot-status').classList.remove('stale'); $('repair-writing').disabled = true; $('mark-check-reviewed').disabled = true; $('check-reviewed-status').textContent = ''; $('repair-help').textContent = 'Create a language check, then describe any mismatch. Nothing changes until you accept a fix.'; refreshFlow(); return; }
     const fresh = snapshotCurrent(snapshot, snapshotInput());
-    $('snapshot-status').textContent = fresh ? `Current check · revision ${snapshot.revision} · ${snapshot.language}` : `Earlier check · revision ${snapshot.revision}. Draft or context changed — check again before repairing.`;
-    $('snapshot-status').classList.toggle('stale', !fresh); $('repair-writing').disabled = !fresh || Boolean(controller) || !$('correction-note').value.trim();
+    $('back-translate').textContent = fresh ? 'Refresh language check' : 'Check updated draft';
+    $('snapshot-status').textContent = fresh ? `Current check · revision ${snapshot.revision} · ${snapshot.language} · ${snapshot.source || 'Language view'}` : `Earlier check · revision ${snapshot.revision}. Draft, context or mode changed — check again before repairing.`;
+    $('snapshot-status').classList.toggle('stale', !fresh); $('repair-writing').disabled = !fresh || Boolean(controller) || !$('correction-note').value.trim() || limitedDemo;
     $('mark-check-reviewed').disabled = !fresh || Boolean(controller);
     $('check-reviewed-status').textContent = checkReviewed(snapshot, snapshotInput(), reviewedId) ? 'Reviewed by you for this version. You can copy or keep editing.' : 'Not yet reviewed by you for the current wording and context.';
     $('repair-help').textContent = fresh ? 'Describe the mismatch to preview a local fix. You accept each edit; nothing is changed automatically.' : 'Create an updated check before requesting a repair. Your earlier notes are kept.';
     refreshFlow();
   }
   function refreshFlow() {
+    $('connection-hint').hidden = demo || Boolean(getConnection().apiKey);
     guide?.refresh({ text: session.text, goal: $('writing-intent').value, avoid: $('writing-avoid').value, intentions: intents.get(),
       habits: voice.get().enabled ? memory.matched() : [], hasSample: Boolean(voice.get().enabled && voice.get().sample),
       snapshot, fresh: snapshotCurrent(snapshot, snapshotInput()), reviewed: checkReviewed(snapshot, snapshotInput(), reviewedId),
@@ -66,6 +74,7 @@ export function initWriting({ getConnection, notify }) {
     cancel(); suggestions = []; preview = null; candidate = null; $('memory-nudge').hidden = true;
     $('reflection-result').replaceChildren(); $('writing-status').textContent = '';
     $('selection-feedback').textContent = '';
+    $('decision-result').hidden = true; $('decision-result').replaceChildren();
     $('habit-conflicts').replaceChildren();
     $('suggestion-summary').textContent = 'Ready when you are. Ask for fresh suggestions after a change.';
     fail(); renderSuggestions(); memory.refresh(); refreshSnapshot(); updateContext(); $('use-writing-habits').checked = voice.get().enabled; refreshFlow();
@@ -90,8 +99,10 @@ export function initWriting({ getConnection, notify }) {
     memory.refresh(); refreshSnapshot(); updateContext();
   }
   function rememberCandidate(data) { memory.open({ ...data, scope: data.scope || context() }); }
+  function openCheck() { showPanel('check'); $('back-translate').focus(); }
+  function continueWriting() { $('suggestions-panel').classList.remove('is-open'); $('writing-draft').focus(); }
   function renderSuggestions() {
-    renderOptions({ suggestions, intentions: intents.get(), apply, reject });
+    renderOptions({ suggestions, intentions: intents.get(), apply, reject, hasDraft: Boolean(session.text.trim()), check: openCheck });
   }
   function apply(item, replacement, reason) {
     try {
@@ -106,13 +117,17 @@ export function initWriting({ getConnection, notify }) {
         $('memory-nudge-text').textContent = content; $('memory-nudge').hidden = false;
       }
       refreshFlow();
-      $('writing-status').textContent = 'Only that passage changed. You can undo it or check the new wording.'; $('analyze-writing').focus();
+      $('writing-status').textContent = 'Only that passage changed. You can undo it or check the new wording.';
+      const habitToReview = candidate;
+      renderDecision({ title: 'Applied to your draft', detail: `Your wording is now: “${replacement}”. Check the updated meaning, or keep writing.`,
+        remember: habitToReview ? () => rememberCandidate(habitToReview) : null, check: openCheck, write: continueWriting }).focus();
     } catch (error) { fail(error.message); }
   }
   function reject(item, reason) {
     cancel(); session = recordFeedback(session, 'rejected', reason, item.original); suggestions = suggestions.filter(x => x !== item);
     log({ kind: 'rejected', before: item.original, proposed: item.replacement, note: reason }); updateSession(); renderSuggestions();
-    $('writing-status').textContent = 'Kept your wording. No lasting habit was inferred.'; $('analyze-writing').focus();
+    $('writing-status').textContent = 'Kept your wording. No lasting habit was inferred.';
+    renderDecision({ title: 'Kept your original wording', detail: 'Your draft did not change. No habit was saved from this choice.', check: openCheck, write: continueWriting }).focus();
   }
   async function run(action) {
     fail();
@@ -148,8 +163,8 @@ export function initWriting({ getConnection, notify }) {
         startingDraft(session, output.draft); preview = { text: output.draft, revision: session.revision, epoch, habits };
         $('starting-preview-text').textContent = output.draft; $('starting-preview').showModal();
       } else if (action === 'back') {
-        snapshot = makeSnapshot(binding, output.text); reviewedId = null; flagged = ''; $('flagged-text').textContent = '';
-        $('check-text').value = output.text; $('correction-note').value = ''; showPanel('check');
+        snapshot = { ...makeSnapshot(binding, output.text), source: demo ? 'Authored example' : 'Live AI' }; reviewedId = null; flagged = ''; $('flagged-text').textContent = '';
+        $('check-text').value = output.text; $('correction-note').value = ''; $('check-draft-comparison').open = true; showPanel('check');
         log({ kind: 'cross-language-check', note: `${snapshot.language} · snapshot ${snapshot.id}` });
       } else {
         $('reflection-result').replaceChildren(); showPanel('check');
@@ -189,13 +204,23 @@ export function initWriting({ getConnection, notify }) {
   $('use-writing-habits').checked = voice.get().enabled;
   $('use-writing-habits').addEventListener('change', () => voice.setEnabled($('use-writing-habits').checked));
   $('remember-correction').addEventListener('click', () => { if (candidate) rememberCandidate(candidate); });
-  $('dismiss-memory').addEventListener('click', () => { candidate = null; $('memory-nudge').hidden = true; refreshFlow(); });
-  $('open-check').addEventListener('click', () => { showPanel('check'); $('back-translate').focus(); });
+  $('dismiss-memory').addEventListener('click', () => {
+    candidate = null; $('memory-nudge').hidden = true; document.querySelector('#decision-result [data-remember-candidate]')?.remove(); refreshFlow();
+    ((!$('panel-suggestions').hidden && document.querySelector('#decision-result button')) || $('writing-draft')).focus();
+  });
+  $('open-check').addEventListener('click', openCheck);
+  $('connect-writing').addEventListener('click', () => $('open-settings').click());
+  $('first-example').addEventListener('click', () => $('writing-demo-mode').click());
+  $('back-from-intentions').addEventListener('click', () => { $('intent-panel').open = false; continueWriting(); $('writing-status').textContent = 'Your confirmed instructions will guide your next review. Your draft is unchanged.'; });
   $('mark-check-reviewed').addEventListener('click', () => {
     if (!snapshotCurrent(snapshot, snapshotInput())) return;
-    reviewedId = snapshot.id; log({ kind: 'meaning-reviewed', note: 'Writer marked the current check as matching their meaning; not a model accuracy claim.' }); refreshSnapshot();
+    const previousNote = $('correction-note').value.trim();
+    cancel(); reviewedId = snapshot.id; flagged = ''; $('check-text').setSelectionRange($('check-text').selectionEnd, $('check-text').selectionEnd); $('flagged-text').textContent = ''; $('correction-note').value = '';
+    suggestions = suggestions.filter(item => !item.correction); renderSuggestions();
+    log({ kind: 'meaning-reviewed', note: `Writer marked the current check as matching their meaning; not a model accuracy claim.${previousNote ? ` Earlier mismatch note, now resolved by the writer: ${previousNote}` : ''}` }); refreshSnapshot();
   });
-  $('return-to-writing').addEventListener('click', () => { $('suggestions-panel').classList.remove('is-open'); $('writing-draft').focus(); });
+  $('return-to-writing').addEventListener('click', continueWriting);
+  $('copy-checked-draft').addEventListener('click', () => $('copy-draft').click());
   document.querySelectorAll('[data-mismatch]').forEach(node => node.addEventListener('click', () => {
     const previous = $('correction-note').value.trim();
     if (previous) { $('correction-note').focus(); return; }

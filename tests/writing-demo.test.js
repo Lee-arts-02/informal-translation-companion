@@ -18,3 +18,8 @@ test('demo language constraints are explicit and examples preserve their protect
     assert.throws(() => demoReview('analyze', { ...state, target: 'English' }, sample, 'French'), /explanation|live/i);
   }
 });
+test('the visible commitment mismatch prompt works in the authored repair example', () => {
+  const sample = writingDemos.find(item => item.id === 'promise');
+  const output = demoReview('repair', { ...createSession(sample.text), target: 'English', scope: 'light', correction: 'The commitment is stronger than I intended.' }, sample);
+  assert.match(output.suggestions[0].replacement, /try to/);
+});

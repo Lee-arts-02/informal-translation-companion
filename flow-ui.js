@@ -9,6 +9,7 @@ export function initFlowGuide({ editGoal, reviewIntentions = editGoal, write, ch
   $('edit-draft-goal').addEventListener('click', editGoal);
   $('flow-next-action').addEventListener('click', () => next());
   return { refresh(state) {
+    $('flow-guide').classList.toggle('is-empty', !state.text.trim() && !state.goal && !state.intentions.length);
     const confirmed = state.intentions.filter(x => x.confirmed), pending = state.intentions.length - confirmed.length;
     $('goal-anchor-text').textContent = state.goal || confirmed[0]?.content || 'No goal added yet. You can write first.';
     $('request-input-summary').textContent = `Refinement receives your current and original drafts, explicit context, protected expressions, ${confirmed.length} confirmed intention(s), ${state.habits.length} matching habit(s)${state.hasSample ? ' and your enabled writing sample' : ''}.`;
