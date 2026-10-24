@@ -26,7 +26,7 @@ jobs:
       - name: Package only public app files
         run: |
           mkdir _site
-          cp index.html styles.css writing.css app.js translation.js preferences.js demo.js writing-session.js review-api.js writing-ui.js writing-demo.js favicon.svg _site/
+          cp index.html styles.css writing.css app.js translation.js preferences.js demo.js writing-session.js review-api.js writing-ui.js writing-demo.js intent-state.js intent-ui.js memory-store.js memory-ui.js workflow-state.js writing-panels.js writing-voice.js ui-helpers.js favicon.svg _site/
       - uses: actions/upload-pages-artifact@v4
         if: github.event_name != 'pull_request'
         with:

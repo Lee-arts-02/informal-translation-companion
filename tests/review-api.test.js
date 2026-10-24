@@ -47,3 +47,25 @@ test('starting drafts cannot exceed limits or delete protected text', () => {
   assert.throws(() => api.parseReview('start', '{"draft":"Thank you"}', input), /protect/i);
   assert.throws(() => api.parseReview('start', JSON.stringify({ draft: 'a'.repeat(6001) }), input), /6,000/i);
 });
+
+test('backtranslation cannot see the original, intent, habits, history or voice samples', () => {
+  const request = api.buildReviewRequest('back', { ...input, backLanguage: 'Chinese (Simplified)', preferences: ['secret preference'], voiceSamples: ['private sample'] }, 'model');
+  const data = JSON.parse(request.messages[1].content);
+  assert.deepEqual(Object.keys(data).sort(), ['action', 'backLanguage', 'glossary', 'text']);
+  assert.equal(data.text, input.text);
+  assert(!JSON.stringify(request).includes('secret preference'));
+});
+test('repair uses separate feedback and applies ordinary range/protection validation', () => {
+  const valid = { start: 0, original: 'Thanks', replacement: 'Thank you', reason: 'x', tradeoff: 'x', reader: 'x' };
+  const parsed = api.parseReview('repair', JSON.stringify({ summary: 'Repair preview', suggestions: [valid] }), input);
+  assert.equal(parsed.suggestions[0].original, 'Thanks');
+  assert.throws(() => api.parseReview('repair', JSON.stringify({ summary: 'x', suggestions: [{ ...valid, original: '辛苦了', start: 7 }] }), input), /protect/i);
+});
+test('conflict warnings must cite real supplied habits and explicit instructions', () => {
+  const result = api.parseReview('analyze', JSON.stringify({ summary: 'x', suggestions: [], conflicts: [
+    { habit: 'Keep it formal', instruction: 'Sounding distant', explanation: 'May conflict' },
+    { habit: 'Invented preference', instruction: 'Sounding distant', explanation: 'False attribution' },
+    { habit: 'Keep it formal', instruction: 'Not in input', explanation: 'False instruction' },
+  ] }), { ...input, preferences: ['Keep it formal'] });
+  assert.equal(result.conflicts.length, 1);
+});

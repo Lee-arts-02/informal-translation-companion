@@ -1,155 +1,93 @@
 # NuanceBridge
 
-**Your words. Your choices.** A multilingual writing companion for students who
-want clearer writing while keeping their intended meaning, personal voice, and
-cultural expression.
+**Find the words. Keep your meaning.** A multilingual writing companion for shaping a message without giving up your meaning, cultural expressions or final say.
 
-[Open on Vercel](https://nuancebridge.vercel.app/)
-· [Open on GitHub Pages](https://lee-arts-02.github.io/informal-translation-companion/)
-· [Deployment runs](https://github.com/Lee-arts-02/informal-translation-companion/actions)
+[Open on Vercel](https://nuancebridge.vercel.app/) · [GitHub Pages](https://lee-arts-02.github.io/informal-translation-companion/) · [Deployment checks](https://github.com/Lee-arts-02/informal-translation-companion/actions)
 
-![Writing companion desktop](preview/writing-desktop.png)
+![The writing workspace](preview/writing-desktop.png)
 
-## Write with control
+## A connected writing journey
 
-1. Explore the **Guided demo**, or choose **Write my own**. **New draft** starts a
-   fresh session; switching to live mode keeps the current draft so you can continue.
-2. Describe your intention, what you want to avoid, your reader, and your relationship.
-3. Write in English, another language, or a mixture (up to 6,000 characters).
-4. Select an expression and click **Keep selected words**. The app protects that
-   occurrence from AI replacements and manual edits. Click its chip to unprotect it.
-5. Choose light edits, grammar only, selected passage only, or expressive local
-   alternatives. Choose the language in which explanations should appear.
-6. Ask for focused suggestions. Review the original passage, replacement, reason,
-   tradeoff, and possible reader impression. **Nothing changes automatically.**
-7. Accept, edit the replacement before applying it, or reject. Optional feedback
-   such as “Too formal” guides subsequent live reviews in this session.
-8. Compare with the original, undo, check meaning and reader perspective, or
-   back-translate for reflection. Copy or explicitly download your finished draft.
+1. **Start with your words.** Write in English, another language, or a mixture. Context is optional. Choose a writing language and an explanation language independently.
+2. **Clarify your intentions.** Add your own constraints or request evidence-grounded AI interpretations. User instructions, tentative model interpretations and user-confirmed interpretations have distinct labels. Confirming every card is never required.
+3. **Shape a passage.** Suggestions show current wording, an editable alternative and its possible tradeoffs. Use it, make it your own, or keep your wording. Full-draft generation always requires preview and explicit acceptance.
+4. **Check in another language.** Inspect the current draft in a familiar language, optionally flag a passage, explain a mismatch, and preview local repairs in the writing language. Accepting a repair returns to the same draft.
+5. **Remember selectively.** A correction can become a candidate habit, but only your explicit save stores it. Review its wording, source and scope before saving. Copying your draft never requires saving a habit or completing a check.
 
-For a draft in another language, **Create a starting draft** offers a complete
-draft in the chosen writing language. You must review and explicitly accept it;
-protected expressions remain unchanged and undo remains available.
+The **“尽量” is not a promise** authored example demonstrates the complete journey without an API key: inspect intent, see the overstatement in Chinese, explain that “尽量” means trying rather than guaranteeing, accept a local English repair, and optionally save a scoped habit. Three additional examples explore warmth, boundaries and a cultural idiom. All demos are clearly labeled authored; changed wording outside their curated variants requires live mode. The authored repair fixture supports the uncertainty example, not arbitrary feedback.
 
-## Demo and personal live mode
+On phones the companion opens as a dismissible bottom panel, preserving the draft. Context, intention details, suggestion explanations and additional reader perspectives use progressive disclosure.
 
-The writing demo has three authored scenarios: Chinese/English appreciation,
-setting a boundary, and an Urdu idiom. Try protection, selective acceptance,
-rejection, undo, Chinese explanations, starting-draft preview, and reflection without
-an API key. The examples are labeled curated and make no AI requests. Demo results
-are limited to known example wording, English writing, English/Simplified Chinese
-explanations, and a Simplified Chinese
-back-translation. Other wording/languages require live mode; no fake generation occurs.
+## Words, instructions and protected expressions
 
-For live writing or translation, open **API settings** and enter your own
-[OpenRouter key](https://openrouter.ai/settings/keys). Use a separate key with a low
-credit limit. `openrouter/auto` routes to a model; it is not guaranteed free. You
-can instead enter a specific ID from the [model catalog](https://openrouter.ai/models).
-Models differ in language quality, cultural knowledge, cost, and reliability.
+Select a passage to **keep these words**, **find an expression**, or mark **this is a note to AI**. Moving a note out of the final draft requires confirmation. Undo restores moved notes and their prior task instructions unless those instructions were subsequently edited.
 
-No shared or owner-funded API account is provided to visitors. Your session key is
-not verified until a request succeeds. Ctrl+Enter / Cmd+Enter in either draft box
-requests guidance or translation.
+Protection applies to the selected occurrence, including repeated expressions and Unicode. It is enforced in code for manual edits, local replacements and full starting drafts. Remove a protection chip before changing that expression.
 
-## Voice and human perspectives
+Writing, explanation and checking languages are separate. Writing and checking menus contain 28 choices, including Simplified/Traditional Chinese and Cantonese. An explicit setting allows intentional language mixing; protected expressions always take precedence.
 
-**My voice profile** lets you explicitly save a short writing example on this
-browser, forget it, and enable/disable inclusion of the example and saved style
-preferences in live writing requests. There is no automatic long-term learning.
+## Inspectable influence and habits
 
-**Invite a human perspective** downloads a text review copy containing your
-draft, intention, things to avoid, and protected expressions. Send it yourself to
-someone you trust, then paste their feedback into the app. Feedback informs the
-next live review but never edits your draft by itself. This is a manual exchange,
-not a live collaboration room, account system, or public community.
+**Changes** records offered wording, accepted or user-edited results, rejected suggestions, intent decisions, checks and habit actions. Continuous typing is grouped. Session records can be explicitly downloaded; they are not collected as analytics or automatically persisted.
 
-## Quick translation remains available
+Suggested intention links and reader interpretations are model judgments, not internal causal evidence. The app records which matched habits were provided to a request; it does not claim those habits caused particular output. Possible habit conflicts must cite an actual supplied habit and explicit current instruction; users can skip the habit and request a fresh review. Current explicit instructions take priority over older habits in the prompt.
 
-Expand **Need a quick translation?** for the original translator, its three curated
-scenarios, register choices, and context controls. Live translation and the writing
-target menu offer 28 choices, including Simplified Chinese, Traditional Chinese,
-Cantonese (Traditional), English, Urdu, Spanish, French, Arabic, Bengali, Dutch,
-German, Greek, Hebrew, Hindi, Indonesian, Italian, Japanese, Korean, Malay, Persian,
-Polish, Portuguese, Russian, Tamil, Thai, Turkish, Ukrainian, and Vietnamese.
+**My expression habits** supports:
 
-## Run and deploy
+- Explicit saving, editing, pausing, deletion, source inspection, JSON export/import and clearing.
+- Scope by reader label, channel and writing language. All nonempty scope fields must match, case-insensitively; free-text reader labels are matched exactly, not inferred semantically.
+- Per-writing-session exclusions and a global writing-profile switch. Paused, out-of-scope or excluded habits do not enter writing requests. The quick translator uses the same habit store with its own context and enable switch.
+- Migration of earlier explicitly saved style preferences, retaining their disabled state where recorded and marking their scope as unset. Samples remain explicitly chosen examples, never silently extracted from accepted AI text.
+- Atomic, size-bounded imports. Import replaces the list only after confirmation; imported source labels are file-supplied assertions, not authenticated history. Custom imported scopes survive editing.
 
-No runtime dependencies, CDN scripts, build step, external fonts, or analytics.
-Serve the folder over HTTP; ES modules need an HTTP server:
+Habits live only on the current browser; no accounts or cross-device sync are provided. If browser storage is denied, explicit saves work for the visit with a visible warning. Invalid existing habit data is preserved until the user explicitly imports a replacement or clears it.
+
+## Personal live mode
+
+Open **API settings** and enter your own [OpenRouter key](https://openrouter.ai/settings/keys) and a model ID. The key stays in tab memory and is cleared on reload/navigation or **Forget key**. The app does not place it in localStorage, URLs, exports or source code.
+
+Live requests share the relevant text and context with OpenRouter and its selected model provider and may incur charges. Browser extensions may access credentials entered in a browser. Provider quality, costs and retention vary. No shared or owner-funded API account is supplied.
+
+Backtranslation uses a **separate source-blind request** containing only the current draft, checking language and protected-expression glossary. Original text, intent, history, saved habits and writing samples are excluded. Comparison and repair are separate requests that can use the original, current intentions and user feedback. This separation reduces a source of bias; it does not guarantee independence or accuracy.
+
+Each check is bound to the draft revision, checking language and context. Changes mark it stale and disable repair until a new check. Changing correction notes or flagged passages cancels pending repairs and removes stale repair previews. Context changes invalidate pending suggestions and starting drafts. No numeric “meaning accuracy” score is presented.
+
+## Other tools
+
+The original quick translator remains collapsed below the writing workspace, with its context controls, register alternatives and three examples. **More → Export for human feedback** downloads a manual review copy; returned notes can be pasted into the app. There is no automatic sharing or live collaboration room.
+
+## Run, test and deploy
+
+The deployed app is static HTML/CSS/ES modules with no runtime dependencies, external fonts or analytics.
 
 ```sh
 python -m http.server 8000 --bind 127.0.0.1
-```
-
-For Vercel, import this repository, choose the repository root, set Framework
-Preset to **Other**, leave Build Command empty, and set Output Directory to `.`.
-No deployment environment variables or API key are required for this personal-key app.
-
-For GitHub Pages, choose **Settings → Pages → Source → GitHub Actions**. The
-workflow verifies syntax and unit tests and publishes only an explicit app-file
-allowlist. The original prototype, tests, plans, and previews are excluded.
-
-## Privacy and boundaries
-
-- API keys exist in tab memory only; reload, navigation, or **Forget key** clears
-  them. The app does not put them in storage, URLs, source, exports, or logs.
-  Browser extensions/developer tools may still access browser-entered credentials.
-- Live requests send the draft, original, context, protected expressions, session
-  feedback, and enabled voice preferences/example to OpenRouter and its selected
-  provider. Provider retention/privacy policies apply. Cancellation cannot undo
-  charges for provider work already processed.
-- Drafts, protected spans, the last 40 undo snapshots, and the last 20 session
-  decisions stay in memory and disappear on reload. There is no automatic cloud save.
-- Only explicit style preferences, the model ID, toggles, and an explicitly saved
-  voice example persist locally. A downloaded draft/review file is an intentional
-  export. Consider what you disclose before sharing it with a peer.
-- AI reader impressions are possibilities, not facts about cultures or people.
-  Back-translation is a reflection tool, not an accuracy certificate.
-- Local code verifies exact text spans, revision IDs, and protected expressions
-  before applying model edits. Overlapping/unsafe/malformed responses are rejected.
-  Human review is still necessary for meaning and factual accuracy.
-- This independent portfolio project is inspired by an IBM SkillsBuild prototype;
-  it is not affiliated with IBM. IBM Bob can support development, but there is no
-  claimed Bob runtime integration. Interview notes informed design hypotheses;
-  this prototype does not claim validated research outcomes.
-
-## Verify
-
-Use Node.js 22 or newer:
-
-```sh
 npm run check
 npm test
 ```
 
-Tests cover the translation API, safe preference persistence, selective edits,
-repeated text and emoji offsets, protected expressions, stale suggestions, undo,
-feedback, starting drafts, selection boundaries, and honest demo limitations.
-They use controlled API responses and incur no model charges.
-
-Optional full browser workflow check:
+The optional browser suite needs Playwright and a Chromium installation available in your development environment:
 
 ```sh
-npm install --no-save --package-lock=false playwright
-npx playwright install chromium
-node tests/writing-browser.cjs
+npm run test:browser
 ```
 
-Set `TEST_URL` to check a deployed site, and optionally `CHROMIUM_EXECUTABLE` to
-use an existing Chromium installation. The check writes desktop/mobile captures
-under `preview/`. Paid model quality is not verified by automated checks.
+It starts its own local server. `CHROMIUM_EXECUTABLE` selects a browser executable; installed Windows Chrome is used when available, otherwise Playwright's Chromium. `TEST_URL` targets an already deployed copy. `node tests/writing-browser.cjs` remains an alias for this complete suite.
 
-## Structure
+Browser checks cover the authored journey, controlled live request bodies, scoped and paused memories in both tools, per-session exclusions, imported scopes, stale in-flight repairs, protection, undo, key/reload privacy, denied storage and phone layouts. Live requests are intercepted with a nonfunctional fixture key; these tests do **not** evaluate paid-model translation quality or establish research effectiveness.
 
-| File | Responsibility |
+For **Vercel**, choose the repository root, Framework **Other**, no build command, Output Directory `.`. No deployment API key is needed. For **GitHub Pages**, choose Settings → Pages → Source → GitHub Actions. The workflow verifies syntax/unit tests and publishes an explicit public-file allowlist, excluding plans, tests and source PDFs.
+
+## Implementation
+
+| Module | Responsibility |
 | --- | --- |
-| `index.html`, `styles.css`, `writing.css` | Responsive writing and translation UI |
-| `writing-session.js` | Versioned draft, protected spans, safe patches, feedback, undo |
-| `review-api.js` | Structured review, starting drafts, reflection, back-translation |
-| `writing-ui.js`, `writing-demo.js` | Writing interaction and authored examples |
-| `app.js`, `demo.js` | Original translator and shared connection settings |
-| `translation.js` | Translation and shared provider transport |
-| `preferences.js` | Allowlisted translator/style preferences |
-| `tests/` | Unit and browser checks |
+| `writing-session.js` | Protected-range edits, immutable revisions, undo, safe suggestion rebasing |
+| `intent-state.js`, `intent-ui.js` | Evidence-grounded intent origin, confirmation and editing |
+| `memory-store.js`, `memory-ui.js` | Explicit scoped preferences, migration, validation and management |
+| `workflow-state.js`, `writing-panels.js` | Version-bound checks, grouped events and inspectable suggestions |
+| `review-api.js` | Action-specific provider payloads and response validation |
+| `writing-ui.js`, `writing-voice.js`, `ui-helpers.js` | Connected workflow, optional sample and shared controls |
+| `app.js`, `translation.js` | Connection settings, retained translator and provider transport |
 
-Implementation scope: [`plan/writing-companion.md`](plan/writing-companion.md).
+The project is an independent portfolio/research prototype inspired by an IBM SkillsBuild concept, not affiliated with IBM. Its intended benefits for authorship, cultural expression and personalization remain research questions requiring user evaluation.

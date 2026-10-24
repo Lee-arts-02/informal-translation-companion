@@ -1,3 +1,5 @@
+import { parseIntents } from './intent-state.js';
+
 export const writingDemos = [
   {
     id: 'gratitude', title: 'Keep the warmth', culture: '中文 + English',
@@ -45,6 +47,17 @@ export const writingDemos = [
   },
 ];
 
+writingDemos.push({
+  id: 'promise', title: '“尽量” is not a promise', culture: '中文 intent → English draft',
+  text: "I'll send it to you by Friday.",
+  intent: '我会尽量周五给你，不要说得像保证。', avoid: 'Adding a guarantee or changing the date.',
+  recipient: 'Friend', relationship: 'We are helping each other with a project.', protect: 'Friday',
+  suggestions: [{ original: "I'll send it to you", replacement: "I'll try to send it to you",
+    reason: 'Restores the uncertainty explicitly requested by the writer.', tradeoff: 'The date remains a target, not a guarantee.', reader: 'The reader may understand this as an intention to try.',
+    zh: ['保留你明确表达的“尽量”。', '周五仍是目标，但不是确定承诺。', '读者可能理解为愿意尝试，而不是保证完成。'] }],
+  starting: "I'll try to send it to you by Friday.", back: '我会在周五前发给你。',
+});
+
 export function demoReview(action, session, sample, language = 'English') {
   const chinese = language.startsWith('Chinese');
   if (!sample) throw new Error('Choose a curated example or switch to live mode for your own draft.');
@@ -60,7 +73,13 @@ export function demoReview(action, session, sample, language = 'English') {
   if (action === 'back' && !session.backLanguage?.startsWith('Chinese')) throw new Error('The curated back-translation is in Simplified Chinese. Switch to live mode for other languages.');
   if (action === 'back' && session.backLanguage !== 'Chinese (Simplified)') throw new Error('The curated back-translation is in Simplified Chinese. Switch to live mode for Traditional Chinese.');
   if (action === 'start') return { draft: sample.starting };
-  if (action === 'back') return { text: sample.back };
+  if (action === 'back') return { text: sample.id === 'promise' && session.text === sample.starting ? '我会尽量在周五前发给你。' : sample.back };
+  if (action === 'intentions') return { intentions: parseIntents([
+    { content: chinese ? sample.intent : `Keep the writer’s stated intention: ${sample.intent}`, evidence: sample.intent, category: 'meaning' },
+    { content: chinese ? `避免：${sample.avoid}` : `Avoid: ${sample.avoid}`, evidence: sample.avoid, category: 'tone' },
+  ], session) };
+  if (action === 'repair' && sample.id !== 'promise') throw new Error('The authored repair journey is in the “尽量” example. Use live mode for other repairs.');
+  if (action === 'repair' && !/尽量|保证|承诺|try|uncertain|promise|guarantee/i.test(session.correction || '')) throw new Error('This authored repair demonstrates preserving uncertainty. Switch to live mode for other feedback.');
   if (action === 'reflect') return {
     meaning: chinese ? '这是演示说明，不是实时判断。请比较原稿与当前草稿，特别检查承诺、情绪和受保护表达。' : 'Authored demo guidance, not a live assessment: compare the original and current draft for promises, emotion, and protected expressions.',
     reader: chinese ? '读者的理解可能不同。可以询问对方，或邀请朋友反馈；不要把文化背景当成固定规则。' : 'Readers may interpret this differently. Ask your reader or invite a friend; cultural background does not determine an individual response.',
@@ -73,7 +92,7 @@ export function demoReview(action, session, sample, language = 'English') {
     if (session.scope === 'grammar') return [];
     const rejected = session.feedback.some(f => f.action === 'rejected' && f.original === item.original);
     if (rejected) return [];
-    return [{ ...item, id: `demo-${index}`, revision: session.revision, start, end,
+    return [{ ...item, id: `demo-${index}`, revision: session.revision, start, end, intentIds: session.intentions?.slice(0, 1).map(x => x.id) || [],
       reason: chinese ? item.zh[0] : item.reason, tradeoff: chinese ? item.zh[1] : item.tradeoff, reader: chinese ? item.zh[2] : item.reader }];
   });
   return { summary: chinese ? '演示建议由人工编写，不会根据新草稿或新背景生成内容。接受或拒绝后可再查看；实时模式会使用你的反馈。' : 'Authored demo suggestions, not generated for new text or context. Rejected passages are omitted on the next review. Live mode uses your context and explicit feedback.', suggestions };

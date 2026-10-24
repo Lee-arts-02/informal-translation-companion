@@ -128,7 +128,7 @@ async function runTranslation() {
   cancelPending();
   const requestId = generation;
   controller = new AbortController();
-  const input = { text: $('source-text').value, preferences: preferences.useProfile ? preferences.traits : [] };
+  const input = { text: $('source-text').value, preferences: preferences.useProfile ? writingCompanion.habitsFor({ recipient: $('recipient').value, channel: $('channel').value, target: $('target').value }) : [] };
   fields.forEach(id => { input[id] = $(id).value; });
   render(null);
   setBusy(true);
@@ -145,28 +145,6 @@ async function runTranslation() {
     $('request-status').textContent = '';
   } finally {
     if (requestId === generation) { controller = null; setBusy(false); }
-  }
-}
-
-function renderTraits() {
-  $('traits').replaceChildren();
-  preferences.traits.forEach((trait, index) => {
-    const item = document.createElement('li');
-    const label = document.createElement('span');
-    label.textContent = trait;
-    const remove = document.createElement('button');
-    remove.textContent = '×';
-    remove.setAttribute('aria-label', `Remove preference ${index + 1}`);
-    remove.addEventListener('click', () => {
-      preferences.traits.splice(index, 1); persist(); renderTraits();
-      if (mode === 'live') invalidate();
-      $('profile-status').textContent = 'Preference removed.';
-      $('new-trait').focus();
-    });
-    item.append(label, remove); $('traits').append(item);
-  });
-  if (!preferences.traits.length) {
-    const item = document.createElement('li'); item.textContent = 'Your style starts here. Add a preference below.'; $('traits').append(item);
   }
 }
 
@@ -207,17 +185,7 @@ $('settings-form').addEventListener('submit', event => {
 $('model').addEventListener('input', () => $('model').setCustomValidity(''));
 $('disconnect').addEventListener('click', () => { cancelPending(); apiKey = ''; $('api-key').value = ''; $('connection-note').textContent = 'Key forgotten.'; setMode(mode); window.dispatchEvent(new Event('nuancebridge:settings')); });
 $('settings').addEventListener('close', () => { $('api-key').value = ''; });
-$('open-profile').addEventListener('click', () => { renderTraits(); $('profile-status').textContent = ''; $('profile').showModal(); });
-$('trait-form').addEventListener('submit', event => {
-  event.preventDefault(); const trait = $('new-trait').value.trim();
-  if (!trait) return;
-  if (preferences.traits.length >= 12) { $('profile-status').textContent = 'Remove a preference before adding another (maximum 12).'; return; }
-  if (preferences.traits.includes(trait)) { $('profile-status').textContent = 'That preference is already saved.'; return; }
-  preferences.traits.push(trait); persist(); renderTraits(); $('new-trait').value = '';
-  if (mode === 'live') invalidate();
-  $('profile-status').textContent = 'Preference saved in this browser.';
-});
-$('reset-profile').addEventListener('click', () => { preferences.traits = []; persist(); renderTraits(); if (mode === 'live') invalidate(); $('profile-status').textContent = 'All style preferences cleared.'; });
+$('open-profile').addEventListener('click', () => writingCompanion.openHabits());
 document.querySelectorAll('[data-close]').forEach(button => button.addEventListener('click', () => $(button.dataset.close).close()));
 document.querySelectorAll('[data-register]').forEach(button => button.addEventListener('click', () => setRegister(button.dataset.register)));
 $('copy').addEventListener('click', async () => {
@@ -228,4 +196,4 @@ window.addEventListener('pagehide', () => { apiKey = ''; $('api-key').value = ''
 window.addEventListener('pageshow', event => { if (event.persisted) setMode(mode); });
 $('model').value = preferences.model;
 setMode('demo');
-initWriting({ getConnection: () => ({ apiKey, model: preferences.model }), getPreferences: () => preferences, notify });
+const writingCompanion = initWriting({ getConnection: () => ({ apiKey, model: preferences.model }), notify });
