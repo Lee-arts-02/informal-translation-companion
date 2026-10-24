@@ -6,7 +6,7 @@
   "description": "A multilingual writing companion with selective revision, cultural expression protection, and writer control.",
   "scripts": {
     "test": "node --test tests/*.test.js",
-    "check": "node --check app.js && node --check translation.js && node --check preferences.js && node --check demo.js && node --check writing-session.js && node --check review-api.js && node --check writing-ui.js && node --check writing-demo.js && node --check intent-state.js && node --check intent-ui.js && node --check memory-store.js && node --check memory-ui.js && node --check workflow-state.js && node --check writing-panels.js && node --check writing-voice.js && node --check ui-helpers.js && node --check selection-ui.js && node --check flow-ui.js",
+    "check": "node --check app.js && node --check translation.js && node --check preferences.js && node --check demo.js && node --check writing-session.js && node --check review-api.js && node --check writing-ui.js && node --check writing-demo.js && node --check intent-state.js && node --check intent-ui.js && node --check memory-store.js && node --check memory-ui.js && node --check workflow-state.js && node --check writing-panels.js && node --check writing-voice.js && node --check ui-helpers.js && node --check selection-ui.js && node --check flow-ui.js && node --check selection-position.js && node --check selection-popover.js",
     "test:browser": "node tests/workspace-browser.cjs"
   },
   "engines": { "node": ">=22" }

@@ -42,7 +42,7 @@
       <details id="intent-panel" class="intent-panel"><summary>What matters in this draft <span id="intent-count">Add your own or let AI suggest</span></summary><p class="help">These instructions apply to this draft only. AI guesses stay out of writing requests until you confirm them. Saving a future habit is a separate choice.</p><div id="intent-list"></div><form id="intent-form" class="inline-form"><label class="grow">Add an intention<input id="new-intent" maxlength="400" placeholder="e.g. Keep the uncertainty" required></label><button class="button small outline" type="submit">Add</button></form><button id="extract-intents" class="text-button">Help me clarify my intentions</button></details>
       <div class="writing-main"><div class="draft-column">
         <div class="writing-section-heading"><h3>Your working draft</h3><span id="writing-badge" class="badge">YOUR DRAFT</span></div>
-        <div class="draft-editor-area"><section id="selection-workbench" class="selection-workbench" aria-labelledby="selection-title">
+        <div class="draft-editor-area"><section id="selection-workbench" class="selection-workbench" popover="manual" aria-labelledby="selection-title">
           <div class="selection-heading"><span class="selection-step" aria-hidden="true">1</span><h4 id="selection-title">Choose a passage, then tell us what it needs.</h4></div>
           <div class="selection-preview"><span id="selection-caption" class="field-label">Start here</span><blockquote id="selected-passage" dir="auto">Select a word or sentence in your draft below.</blockquote></div>
           <p id="selection-guidance" class="help">Highlight text below to get started.</p>
@@ -51,10 +51,11 @@
             <div class="selection-action preserve-action"><span class="action-category">KEEP THE EXPRESSION</span><button id="protect-selection" type="button" aria-describedby="protect-outcome" disabled><span aria-hidden="true">◆</span> Keep exactly as written</button><p id="protect-outcome">Keep this wording in the final draft. AI edits will leave it untouched.</p><span class="action-example">e.g. “辛苦了” stays “辛苦了”</span></div>
             <div class="selection-action express-action"><span class="action-category">EXPLORE THE WORDING</span><button id="express-selection" type="button" aria-describedby="expression-destination" disabled><span aria-hidden="true">↔</span> Suggest another expression</button><p id="expression-destination">Preview alternatives in your writing language. You choose whether to use one.</p><span class="action-example">e.g. “尽量” → “try to”</span></div>
             <div class="selection-action instruction-action"><span class="action-category">GUIDE THE AI</span><button id="instruction-selection" type="button" aria-describedby="instruction-outcome" disabled><span aria-hidden="true">↗</span> Move to AI instructions</button><p id="instruction-outcome">After you confirm, remove this note from the draft and add it to your instructions.</p><span class="action-example">e.g. “不要太正式” tells AI how to help</span></div>
-          </div><p id="selection-feedback" class="selection-feedback" role="status" aria-live="polite"></p>
+          </div>
         </section>
         <label class="sr-only" for="writing-draft">Your working draft</label><textarea id="writing-draft" maxlength="6000" rows="10" dir="auto" placeholder="先写下你想说的。English, 中文, or a little of both…"></textarea></div>
         <div class="draft-meta"><span id="writing-selection">Select words for a little extra help.</span><span id="writing-count" class="mono">0 / 6,000</span></div>
+        <p id="selection-feedback" class="selection-feedback" role="status" aria-live="polite"></p>
 
         <div id="protected-phrases" class="protected-phrases" aria-label="Protected expressions"></div>
         <div class="writing-primary-actions"><button id="analyze-writing" class="button primary">Help me refine this ↗</button><button id="starting-draft" class="button outline">Shape a full draft</button><button id="writing-cancel" class="button outline" hidden>Cancel</button><button id="open-companion" class="button outline mobile-only">View companion</button></div>

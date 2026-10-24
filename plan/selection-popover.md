@@ -1,0 +1,9 @@
+# Selection-anchored passage actions
+
+User clarification: the toolbar must float above the actual selected words, not stick above the entire editor.
+
+Implementation: mirror textarea typography and wrapping in an invisible measurement element, use DOM Range line fragments to locate the visible part of the actual UTF-16 selection, subtract textarea scrolling, and anchor a compact top-layer popover there. Prefer above; flip below only when necessary to keep it onscreen. Recompute on selection, textarea/page scroll, resize and visual-viewport changes. Hide when the selected text scrolls out of view, close on outside interaction/Escape, and preserve the selected range when operating toolbar buttons. Retain protection, selected-only replacement and note-move confirmations.
+
+Verify pure placement edge cases and browser geometry on distinct lines, wrapped mixed-language text, internal/page scroll, narrow screens, dismissal, keyboard selection and all existing writing flows. Inspect screenshots, obtain independent code review, publish and verify deployment. Do not modify or commit the user's unrelated PDF.
+
+Implementation evidence: placement tests failed before implementation and now pass; all 45 unit tests, syntax and diff checks pass. Full Chrome suite passes with selection-line movement, wrapped mixed-language anchors, internal/page scroll, offscreen hide/return, viewport bounds, Escape/outside dismissal and keyboard-only selected-wording actions/Tab exit. Inspected the mobile viewport screenshot showing actions immediately above line 12 inside the editor. Fixed mobile-panel overlap; toolbar yields to it. Visual viewport maximum dimensions are applied before measuring; textarea resizing is observed. A code reviewer approved the geometry/selection integration and identified keyboard/zoom improvements, which were implemented and regression-tested.

@@ -23,3 +23,18 @@ button,input,select,textarea,summary{touch-action:manipulation}button:focus-visi
 @media(max-width:750px){.flow-guide{padding:14px 18px}.flow-navigation{display:grid;grid-template-columns:1fr 1fr;gap:7px}.flow-navigation button{justify-content:flex-start;font-size:11px;min-height:40px!important;padding:8px}.flow-next{flex-wrap:wrap}.flow-next>.button{margin-top:2px}.goal-anchor{gap:7px}.goal-anchor p{flex-basis:100%;font-size:12px}.check-steps{gap:5px}.check-steps li{padding:7px}.check-steps span{font-size:10px}.selection-workbench.has-selection{top:5px;padding:8px}.selection-workbench.has-selection .selection-actions{gap:5px}.selection-workbench.has-selection .selection-action{padding:5px;border-left-width:2px}.selection-workbench.has-selection .action-category{display:none}.selection-workbench.has-selection .selection-action button{font-size:10px;line-height:1.45;padding:3px!important;min-height:48px!important}.selection-workbench.has-selection .selection-action p{display:none}.selection-workbench.has-selection #selection-guidance{font-size:10px;margin-bottom:5px}.selection-workbench.has-selection .selection-preview{padding:6px 8px;gap:7px}.selection-workbench.has-selection #selected-passage{max-height:42px;font-size:13px}.selection-workbench.has-selection .selection-step{display:none}}
 .writing-workspace{overflow:clip}
 .draft-editor-area{position:relative;min-width:0}
+/* Actions are anchored to the visible selected text, not the editor boundary. */
+.selection-workbench[popover]{display:none;position:fixed;inset:auto;margin:0;width:min(420px,calc(100vw - 20px));max-height:calc(100dvh - 20px);overflow-y:auto;padding:8px;border:1px solid #93ad81;border-radius:10px;background:#f4f8ee;box-shadow:0 8px 30px #243f352b;z-index:40}
+.selection-workbench[popover]:popover-open{display:block}
+.selection-workbench[popover].popover-fallback-open{display:block}
+.selection-workbench[popover].has-selection{position:fixed;inset:auto;margin:0;padding:8px}
+.selection-workbench[popover]>.selection-heading,.selection-workbench[popover] .action-category,.selection-workbench[popover] .action-example,.selection-workbench[popover] .selection-action p{display:none}
+.selection-workbench[popover].has-selection .selection-preview{display:flex;align-items:center;gap:8px;padding:0 2px 6px;border:0;background:transparent}
+.selection-workbench[popover].has-selection #selected-passage{flex:1;min-width:0;max-height:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;line-height:1.7;margin:0}
+.selection-workbench[popover] #selection-caption{font-size:10px;white-space:nowrap}
+.selection-workbench[popover].has-selection #selection-guidance{font-size:10px;line-height:1.5;margin:0 2px 6px}
+.selection-workbench[popover].has-selection .selection-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+.selection-workbench[popover].has-selection .selection-action{padding:3px 5px;background:#fffefa;border-left-width:2px}
+.selection-workbench[popover].has-selection .selection-action button{font-size:11px;line-height:1.4;min-height:44px;padding:3px 1px}
+.selection-workbench[popover] .selection-close{border:0;background:transparent;font-size:21px;line-height:1;min-height:28px;min-width:28px;padding:0;color:#41613a}
+@media(max-width:750px){.selection-workbench[popover].has-selection .selection-action button{font-size:10px;min-height:44px!important;padding:3px 1px!important}.selection-workbench[popover].has-selection #selection-guidance{font-size:10px}.selection-workbench[popover] .selection-close{min-height:28px!important}.selection-workbench[popover].has-selection #selected-passage{max-height:none}}

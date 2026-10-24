@@ -10,6 +10,7 @@ import { renderOptions, renderEvents } from './writing-panels.js';
 import { renderSelection } from './selection-ui.js';
 import { initFlowGuide } from './flow-ui.js';
 import { confirmedIntentions } from './intent-state.js';
+import { initSelectionPopover } from './selection-popover.js';
 
 export function initWriting({ getConnection, notify }) {
   let session = createSession(), demo = false, sample = null, suggestions = [], selection = null;
@@ -278,6 +279,6 @@ export function initWriting({ getConnection, notify }) {
     reviewIntentions: () => { $('intent-panel').open = true; (document.querySelector('.intent-card button') || $('new-intent')).focus(); },
     write: () => { if (suggestions.length) { showPanel('suggestions'); document.querySelector('.suggestion-card button')?.focus(); } else { $('suggestions-panel').classList.remove('is-open'); $('writing-draft').focus(); } },
     check: () => { showPanel('check'); $('back-translate').focus(); }, remember: () => candidate ? rememberCandidate(candidate) : memory.open() });
-  updateSession(); renderSuggestions(); renderEvents(events);
+  initSelectionPopover(); updateSession(); renderSuggestions(); renderEvents(events);
   return { openHabits: () => memory.open(), habitsFor: otherContext => memory.forContext(otherContext).map(x => x.content) };
 }

@@ -13,7 +13,7 @@ const server = http.createServer((req, res) => {
   res.setHeader('Content-Type', mime[path.extname(file)]); res.end(fs.readFileSync(path.join(root, file)));
 });
 async function select(page, id, start, end) {
-  await page.locator(`#${id}`).evaluate((element, range) => { element.focus(); element.setSelectionRange(...range); element.dispatchEvent(new Event('select')); }, [start, end]);
+  await page.locator(`#${id}`).evaluate((element, range) => { element.focus(); element.setSelectionRange(...range); element.dispatchEvent(new Event('select')); if (element.id === 'writing-draft') element.dispatchEvent(new Event('pointerup')); }, [start, end]);
 }
 async function until(page, selector, text) { await page.waitForFunction(([s, t]) => document.querySelector(s)?.textContent.includes(t), [selector, text]); }
 
@@ -30,7 +30,7 @@ async function until(page, selector, text) { await page.waitForFunction(([s, t])
     await page.goto(url); await page.waitForLoadState('networkidle');
     assert.equal(await page.locator('#writing-draft').inputValue(), '');
     assert.match(await page.locator('#flow-next-title').textContent(), /Start with/);
-    assert(await page.locator('#selection-workbench').evaluate(element => Boolean(element.compareDocumentPosition(document.getElementById('writing-draft')) & Node.DOCUMENT_POSITION_FOLLOWING)));
+    assert(!(await page.locator('#selection-workbench').isVisible()));
     assert.equal(await page.locator('#writing-target option').count(), 28);
     assert.equal(await page.locator('#back-language option').count(), 28);
     assert(await page.locator('#copy-draft').isDisabled());
@@ -146,7 +146,9 @@ async function until(page, selector, text) { await page.waitForFunction(([s, t])
     for (let i = 0; i < 8; i++) await page.keyboard.press('ArrowRight');
     await page.keyboard.up('Shift');
     assert.equal(await page.locator('#selected-passage').textContent(), "I'll try");
-    await page.locator('#express-selection').click(); await until(page, '#writing-suggestions', 'small local option');
+    await page.keyboard.press('Tab'); assert(await page.locator('#protect-selection').evaluate(element => element === document.activeElement));
+    await page.keyboard.press('Tab'); assert(await page.locator('#express-selection').evaluate(element => element === document.activeElement));
+    await page.keyboard.press('Enter'); await until(page, '#writing-suggestions', 'small local option');
     assert.equal(sent.at(-1).scope, 'selection'); assert.deepEqual(sent.at(-1).selection, { start: 0, end: 8 });
     await page.locator('#writing-scope').selectOption('light');
     await page.locator('#analyze-writing').click(); await until(page, '#writing-suggestions', 'small local option');
@@ -246,22 +248,21 @@ async function until(page, selector, text) { await page.waitForFunction(([s, t])
     await page.locator('#selection-workbench').screenshot({ path: path.join(root, 'preview/selection-actions.png'), animations: 'disabled' });
     for (const width of [1440, 390, 320]) {
       await page.setViewportSize({ width, height: 1000 });
+      if (width < 750 && await page.locator('#suggestions-panel').isVisible()) await page.locator('#close-companion').click();
       assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `Horizontal overflow at ${width}`);
-      const sticky = await page.evaluate(() => {
-        const toolbar = document.getElementById('selection-workbench'), draft = document.getElementById('writing-draft');
-        const top = toolbar.getBoundingClientRect().top + scrollY;
-        window.scrollTo(0, top + 80);
-        const rect = toolbar.getBoundingClientRect();
-        return { top: rect.top, bottom: rect.bottom, draftBottom: draft.getBoundingClientRect().bottom };
+      await page.locator('#writing-draft').evaluate(element => element.scrollIntoView({ block: 'center' }));
+      await select(page, 'writing-draft', 0, 4);
+      await page.waitForFunction(() => document.getElementById('selection-workbench').matches(':popover-open'));
+      const floating = await page.evaluate(() => {
+        const toolbar = document.getElementById('selection-workbench'), rect = toolbar.getBoundingClientRect();
+        return { top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.right, side: toolbar.dataset.side, anchor: Number(toolbar.dataset.anchorTop) };
       });
-      assert(sticky.top >= 0 && sticky.top <= 12, `Selection controls must stay at viewport top at ${width}: ${JSON.stringify(sticky)}`);
-      assert(sticky.bottom < sticky.draftBottom, `Selection controls must leave draft content below them at ${width}`);
-      await page.evaluate(() => window.scrollTo(0, 0));
-      const above = await page.evaluate(() => document.getElementById('selection-workbench').getBoundingClientRect().bottom <= document.getElementById('writing-draft').getBoundingClientRect().top + 1);
-      assert(above, `Passage controls must render above the editor at ${width}`);
+      assert(floating.left >= 9 && floating.right <= width - 9, `Popover stays in viewport at ${width}`);
+      assert.equal(floating.side, 'above'); assert(Math.abs(floating.bottom + 10 - floating.anchor) < 2, `Popover follows selected words at ${width}`);
       if (width !== 320) await page.screenshot({ path: path.join(root, `preview/writing-${width === 1440 ? 'desktop' : 'mobile'}.png`), fullPage: true, animations: 'disabled' });
     }
     await page.setViewportSize({ width: 390, height: 844 });
+    await page.locator('#open-companion').click();
     assert(await page.locator('#suggestions-panel').isVisible());
     await page.locator('#close-companion').click(); assert(!(await page.locator('#suggestions-panel').isVisible()));
     await page.screenshot({ path: path.join(root, 'preview/writing-mobile.png'), fullPage: true, animations: 'disabled' });
@@ -271,6 +272,50 @@ async function until(page, selector, text) { await page.waitForFunction(([s, t])
     await page.screenshot({ path: path.join(root, 'preview/writing-mobile-check.png'), animations: 'disabled' });
     await page.locator('#correction-note').fill('保留尽量'); await page.locator('#repair-writing').click();
     assert(await page.locator('.suggestion-card').isVisible());
+    // The popover follows text fragments, not the editor's top edge.
+    const float = await browser.newPage({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce' });
+    float.on('pageerror', error => errors.push(error.message)); await float.goto(url); await float.waitForLoadState('networkidle');
+    const settle = p => p.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    const floatingState = p => p.evaluate(() => {
+      const toolbar = document.getElementById('selection-workbench'), rect = toolbar.getBoundingClientRect();
+      return { top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.right, anchor: Number(toolbar.dataset.anchorTop), side: toolbar.dataset.side, draftTop: document.getElementById('writing-draft').getBoundingClientRect().top };
+    });
+    const lines = Array.from({ length: 42 }, (_, i) => `Line ${i} 中文`).join('\n');
+    for (const width of [1440, 390]) {
+      await float.setViewportSize({ width, height: 1000 }); await float.locator('#writing-draft').fill(lines);
+      await float.locator('#writing-draft').evaluate(element => { element.scrollIntoView({ block: 'center' }); element.scrollTop = 0; });
+      await select(float, 'writing-draft', 0, 6); await settle(float); const first = await floatingState(float);
+      const secondIndex = lines.indexOf('Line 1 '); await select(float, 'writing-draft', secondIndex, secondIndex + 6); await settle(float); const second = await floatingState(float);
+      assert(second.top - first.top > 25, `Popover follows the second line at ${width}`);
+      const index = lines.indexOf('Line 12 ');
+      await float.locator('#writing-draft').evaluate(element => { element.scrollTop = parseFloat(getComputedStyle(element).lineHeight) * 8; });
+      await select(float, 'writing-draft', index, index + 7); await settle(float); const middle = await floatingState(float);
+      assert(middle.top > middle.draftTop + 10, `Popover is next to a middle line, not above the editor at ${width}`);
+      assert.equal(middle.side, 'above'); assert(Math.abs(middle.bottom + 10 - middle.anchor) < 2);
+      await float.locator('#writing-draft').evaluate(element => { element.scrollTop += parseFloat(getComputedStyle(element).lineHeight); });
+      await settle(float); const scrolled = await floatingState(float);
+      assert(scrolled.top < middle.top - 25, `Popover follows textarea scrolling at ${width}`);
+      await float.evaluate(() => window.scrollBy(0, 35)); await settle(float); const moved = await floatingState(float);
+      assert(Math.abs(scrolled.top - moved.top - 35) < 2, `Popover follows page scrolling at ${width}`);
+      await float.locator('#writing-draft').evaluate(element => { element.scrollTop = element.scrollHeight; }); await settle(float);
+      assert(!(await float.locator('#selection-workbench').isVisible()), 'Offscreen selected text hides actions');
+      await float.locator('#writing-draft').evaluate(element => { element.scrollTop = parseFloat(getComputedStyle(element).lineHeight) * 8; }); await settle(float);
+      assert(await float.locator('#selection-workbench').isVisible());
+      if (width === 390) await float.screenshot({ path: path.join(root, 'preview/selection-floating-mobile.png'), animations: 'disabled' });
+      await float.keyboard.press('Escape'); assert(!(await float.locator('#selection-workbench').isVisible()));
+      const prefix = '中英 mixed words '.repeat(8), wrapped = `${prefix}wrappedTarget after the mixed-language phrase.`;
+      await float.locator('#writing-draft').fill(wrapped); await float.locator('#writing-draft').evaluate(element => { element.scrollTop = 0; element.scrollIntoView({ block: 'center' }); });
+      await select(float, 'writing-draft', 0, 2); await settle(float); const wrapFirst = await floatingState(float);
+      await select(float, 'writing-draft', prefix.length, prefix.length + 13); await settle(float); const wrapLast = await floatingState(float);
+      assert(wrapLast.anchor > wrapFirst.anchor + 25, `Soft wrapping moves the selected-text anchor at ${width}`);
+      assert(wrapLast.left >= 9 && wrapLast.right <= width - 9);
+      await float.keyboard.press('Tab'); assert(await float.locator('#protect-selection').evaluate(element => element === document.activeElement));
+      await float.keyboard.press('Tab'); await float.keyboard.press('Tab'); await float.keyboard.press('Tab');
+      assert(!(await float.locator('#selection-workbench').isVisible()), 'Tab can leave the toolbar without a focus trap');
+      await select(float, 'writing-draft', prefix.length, prefix.length + 13); await settle(float);
+      await float.mouse.click(3, 3); assert(!(await float.locator('#selection-workbench').isVisible()));
+    }
+    await float.close();
     // Storage denied should not break initialization or explicit memory-only save.
     const restricted = await browser.newPage(); const restrictedErrors = [];
     restricted.on('pageerror', error => restrictedErrors.push(error.message));
