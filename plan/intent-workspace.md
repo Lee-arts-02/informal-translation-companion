@@ -29,7 +29,7 @@
 - [x] 3. Replace the writing workspace presentation with draft-first layout, optional context, intent cards, layered suggestions, check-and-repair panel, event history and explicit memory drawer. Retain existing utilities.
 - [x] 4. Add browser checks for demo and mocked live full journeys, memory persistence/import, stale work, protection, mobile and storage failure; inspect rendered desktop/mobile.
 - [x] 5a. Independent code review, fix findings, rerun required checks, update README/deploy allowlist.
-- [ ] 5b. Commit and push; inspect remote commit and deployment.
+- [x] 5b. Commit and push; inspect remote commit and deployment.
 
 ## Execution ledger
 - Baseline: main with only one untracked user PDF; no tracked modifications. Approved scope covers all three rounds and GitHub push.
@@ -40,3 +40,7 @@
 - Reviewed desktop and phone screenshots; mobile assistance is a dismissible bottom panel. Preview images updated.
 - Independent code review identified and verified fixes for stale flagged repairs, legacy translator preference leakage, typing-history cost, custom imported scopes and disabled-state visibility. Follow-up review approved with no release blockers.
 - No project-memory registry is present. The unrelated untracked user PDF remains untouched.
+- Release commit: `ad41b80cd5fa7d705a0025bdda640efd491907e7`, pushed to the existing repository's `main`.
+- GitHub Actions verification and Pages deployment succeeded: https://github.com/Lee-arts-02/informal-translation-companion/actions/runs/40131361965 . Vercel reported successful deployment for the same commit.
+- The complete intercepted-API browser suite passed independently against both https://nuancebridge.vercel.app/ and https://lee-arts-02.github.io/informal-translation-companion/ . No paid-model translation-quality claims are made.
+- Completion audit: all three approved rounds are implemented; original translation/preview/protection/undo utilities remain; explicit memory lifecycle and source-blind, version-bound checking are covered by code and regression evidence. Temporary implementation files were removed individually.
