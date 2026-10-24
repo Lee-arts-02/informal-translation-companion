@@ -22,6 +22,8 @@ On phones the companion opens as a dismissible bottom panel, preserving the draf
 
 Select a passage to **keep these words**, **find an expression**, or mark **this is a note to AI**. Moving a note out of the final draft requires confirmation. Undo restores moved notes and their prior task instructions unless those instructions were subsequently edited.
 
+The passage workbench shows the actual selected words above three outcome cards: **Keep exactly as written**, **Suggest another expression**, and **Move to AI instructions**. Descriptions and examples explain what stays in the final text, what needs a preview, and what moves out of it. Unavailable actions are disabled with visible guidance; completed protection and note moves show local feedback and an undo path. This guidance draws on metacognitive-scaffolding considerations from [Ramesh et al., CHI 2026](https://arxiv.org/abs/2602.05111), applied here as a writing-interface design hypothesis rather than a proven outcome.
+
 Protection applies to the selected occurrence, including repeated expressions and Unicode. It is enforced in code for manual edits, local replacements and full starting drafts. Remove a protection chip before changing that expression.
 
 Writing, explanation and checking languages are separate. Writing and checking menus contain 28 choices, including Simplified/Traditional Chinese and Cantonese. An explicit setting allows intentional language mixing; protected expressions always take precedence.

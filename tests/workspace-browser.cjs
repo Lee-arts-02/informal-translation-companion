@@ -32,6 +32,8 @@ async function until(page, selector, text) { await page.waitForFunction(([s, t])
     assert.equal(await page.locator('#writing-target option').count(), 28);
     assert.equal(await page.locator('#back-language option').count(), 28);
     assert(await page.locator('#copy-draft').isDisabled());
+    for (const id of ['protect-selection', 'express-selection', 'instruction-selection']) assert(await page.locator(`#${id}`).isDisabled());
+    assert.match(await page.locator('#selected-passage').textContent(), /Select a word/);
     assert.deepEqual(errors, []);
     // Authored journey: inspect intention -> Chinese check -> local repair -> explicitly scoped memory.
     await page.locator('#writing-demo-mode').click();
@@ -115,6 +117,16 @@ async function until(page, selector, text) { await page.waitForFunction(([s, t])
     await until(page, '#intent-list', 'Keep uncertainty');
     await page.locator('#analyze-writing').click(); await until(page, '#writing-suggestions', 'small local option');
     const card = page.locator('.suggestion-card').first();
+    await page.locator('#writing-draft').focus();
+    await page.locator('#writing-draft').evaluate(element => element.setSelectionRange(0, 0));
+    await page.keyboard.down('Shift');
+    for (let i = 0; i < 8; i++) await page.keyboard.press('ArrowRight');
+    await page.keyboard.up('Shift');
+    assert.equal(await page.locator('#selected-passage').textContent(), "I'll try");
+    await page.locator('#express-selection').click(); await until(page, '#writing-suggestions', 'small local option');
+    assert.equal(sent.at(-1).scope, 'selection'); assert.deepEqual(sent.at(-1).selection, { start: 0, end: 8 });
+    await page.locator('#writing-scope').selectOption('light');
+    await page.locator('#analyze-writing').click(); await until(page, '#writing-suggestions', 'small local option');
     await card.getByRole('button', { name: 'Make it my own' }).click(); await card.locator('textarea').fill('I can try');
     await card.getByRole('button', { name: 'Use this expression' }).click();
     assert.match(await page.locator('#writing-draft').inputValue(), /^I can try/);
@@ -144,12 +156,20 @@ async function until(page, selector, text) { await page.waitForFunction(([s, t])
     await page.locator('#writing-draft').fill('Hello. 不要太正式');
     await select(page, 'writing-draft', 7, 12); await page.locator('#instruction-selection').click();
     assert.equal(await page.locator('#writing-draft').inputValue(), 'Hello. ');
+    assert.match(await page.locator('#selection-feedback').textContent(), /no longer in the final draft/);
     assert.match(await page.locator('#writing-intent').inputValue(), /不要太正式/);
     await page.locator('#writing-undo').click();
     assert.equal(await page.locator('#writing-draft').inputValue(), 'Hello. 不要太正式');
     assert(!((await page.locator('#writing-intent').inputValue()).includes('不要太正式')));
     await select(page, 'writing-draft', 7, 12); await page.locator('#instruction-selection').click();
     await select(page, 'writing-draft', 0, 5); await page.locator('#protect-selection').click();
+    assert.match(await page.locator('#selection-feedback').textContent(), /Kept exactly/);
+    assert(await page.locator('#writing-draft').evaluate(element => element === document.activeElement));
+    await select(page, 'writing-draft', 0, 5);
+    assert.equal(await page.locator('#selected-passage').textContent(), 'Hello');
+    assert(await page.locator('#protect-selection').isDisabled());
+    assert(await page.locator('#instruction-selection').isDisabled());
+    assert.match(await page.locator('#selection-guidance').textContent(), /protected words/);
     await page.locator('#writing-draft').fill('Changed');
     assert.equal(await page.locator('#writing-draft').inputValue(), 'Hello. ');
     assert.match(await page.locator('#writing-error').textContent(), /protected/i);
@@ -196,6 +216,8 @@ async function until(page, selector, text) { await page.waitForFunction(([s, t])
     fs.mkdirSync(path.join(root, 'preview'), { recursive: true });
     await page.locator('#context-panel').evaluate(element => { element.open = false; });
     await page.locator('#intent-panel').evaluate(element => { element.open = false; });
+    await select(page, 'writing-draft', 0, 4);
+    await page.locator('#selection-workbench').screenshot({ path: path.join(root, 'preview/selection-actions.png'), animations: 'disabled' });
     for (const width of [1440, 390, 320]) {
       await page.setViewportSize({ width, height: 1000 });
       assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `Horizontal overflow at ${width}`);

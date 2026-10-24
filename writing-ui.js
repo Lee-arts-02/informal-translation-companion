@@ -7,6 +7,7 @@ import { initIntentPanel } from './intent-ui.js';
 import { addEvent, makeSnapshot, snapshotCurrent } from './workflow-state.js';
 import { initWritingVoice } from './writing-voice.js';
 import { renderOptions, renderEvents } from './writing-panels.js';
+import { renderSelection } from './selection-ui.js';
 
 export function initWriting({ getConnection, notify }) {
   let session = createSession(), demo = false, sample = null, suggestions = [], selection = null;
@@ -19,6 +20,7 @@ export function initWriting({ getConnection, notify }) {
     actionIds.forEach(id => { $(id).disabled = value; });
     $('writing-cancel').hidden = !value; $('suggestions-panel').setAttribute('aria-busy', String(value));
     if (!value && memory && intents) refreshSnapshot();
+    if (memory && intents) renderSelection(session, selection, $('writing-target').value, value);
   }
   function cancel() { epoch++; controller?.abort(); controller = null; busy(false); }
   const context = () => ({ recipient: $('writing-recipient').value, channel: $('writing-channel').value, target: $('writing-target').value });
@@ -49,6 +51,7 @@ export function initWriting({ getConnection, notify }) {
   function invalidate() {
     cancel(); suggestions = []; preview = null; candidate = null; $('memory-nudge').hidden = true;
     $('reflection-result').replaceChildren(); $('writing-status').textContent = '';
+    $('selection-feedback').textContent = '';
     $('habit-conflicts').replaceChildren();
     $('suggestion-summary').textContent = 'Ready when you are. Ask for fresh suggestions after a change.';
     fail(); renderSuggestions(); memory.refresh(); refreshSnapshot(); updateContext(); $('use-writing-habits').checked = voice.get().enabled;
@@ -67,7 +70,7 @@ export function initWriting({ getConnection, notify }) {
     for (const [index, span] of session.protected.entries()) $('protected-phrases').append(button(`Keep: ${span.text} ×`, () => {
       session = unprotectSpan(session, index); log({ kind: 'protection-removed', note: span.text }); selection = null; invalidate(); updateSession();
     }, 'protected-chip'));
-    $('writing-selection').textContent = selection ? `${selection.end - selection.start} characters selected.` : 'Select words for a little extra help.';
+    renderSelection(session, selection, $('writing-target').value, Boolean(controller));
     $('session-feedback').replaceChildren();
     if (session.feedback.length) $('session-feedback').append(make('p', `Latest feedback: ${session.feedback.at(-1).reason || session.feedback.at(-1).action}. Session only.`));
     memory.refresh(); refreshSnapshot(); updateContext();
@@ -186,12 +189,20 @@ export function initWriting({ getConnection, notify }) {
   });
   $('writing-draft').addEventListener('select', () => {
     const { selectionStart: start, selectionEnd: end } = $('writing-draft'); const previous = selection; selection = start < end ? { start, end } : null;
-    $('writing-selection').textContent = selection ? `${end - start} characters selected.` : 'Select words for a little extra help.';
+    if (previous?.start !== selection?.start || previous?.end !== selection?.end) $('selection-feedback').textContent = '';
+    renderSelection(session, selection, $('writing-target').value, Boolean(controller));
     if ($('writing-scope').value === 'selection' && (previous?.start !== selection?.start || previous?.end !== selection?.end)) invalidate();
   });
   $('writing-draft').addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !controller) { e.preventDefault(); run('analyze'); } });
   $('protect-selection').addEventListener('click', () => {
-    try { if (!selection) throw new Error('Select the words you want to keep first.'); session = protectSpan(session, selection.start, selection.end); log({ kind: 'protected', note: session.text.slice(selection.start, selection.end) }); selection = null; invalidate(); updateSession(); }
+    try {
+      if (!selection) throw new Error('Select the words you want to keep first.');
+      const text = session.text.slice(selection.start, selection.end), end = selection.end;
+      session = protectSpan(session, selection.start, selection.end); log({ kind: 'protected', note: text });
+      selection = null; $('writing-draft').setSelectionRange(end, end); invalidate(); updateSession();
+      $('selection-feedback').textContent = `Kept exactly: “${text}”. Remove its protection chip to change it, or use Undo last change.`;
+      $('writing-draft').focus();
+    }
     catch (error) { fail(error.message); }
   });
   $('express-selection').addEventListener('click', () => { if (!selection) { fail('Select the words you want help expressing.'); return; } $('writing-scope').value = 'selection'; run('analyze'); });
@@ -207,6 +218,7 @@ export function initWriting({ getConnection, notify }) {
       session = { ...session, history: [...session.history.slice(0, -1), { ...session.history.at(-1), movedInstruction: { before: previousIntent, after: note } }] };
       $('writing-intent').value = note;
       log({ kind: 'instruction-moved', before: text, note: 'Moved to task instructions by the writer; omitted from final draft.' }); selection = null; invalidate(); updateSession(); $('context-panel').open = true;
+      $('selection-feedback').textContent = `Moved to “What do you want to convey?”: “${text}”. It is no longer in the final draft. Undo last change restores it.`;
     } catch (error) { fail(error.message); }
   });
   $('writing-undo').addEventListener('click', () => {
