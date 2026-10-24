@@ -17,6 +17,27 @@ async function select(page, id, start, end) {
 }
 async function until(page, selector, text) { await page.waitForFunction(([s, t]) => document.querySelector(s)?.textContent.includes(t), [selector, text]); }
 
+// Open disclosures through their visible summaries, as a user would.
+async function ready(page, selector) {
+  const locator = page.locator(selector);
+  if ((selector.includes('intent-panel') || selector === '.intent-card') && await page.locator('#intent-panel').evaluate(el => el.hidden))
+    await page.locator('#flow-intention').click();
+  if (selector.startsWith('[data-panel=') && !await page.locator('#suggestions-panel').isVisible())
+    await (await ready(page, '#open-companion')).click();
+  const parents = await locator.first().evaluate(el => {
+    const result = []; for (let p = el.parentElement; p; p = p.parentElement)
+      if (p.tagName === 'DETAILS') result.unshift(p.id);
+    return result;
+  });
+  for (const id of parents) if (id && !await page.locator(`#${id}`).evaluate(el => el.open))
+    await page.locator(`#${id} > summary`).click();
+  return locator;
+}
+async function openTools(page, section) {
+  await ready(page, `#${section} > summary`);
+  if (!await page.locator(`#${section}`).evaluate(el => el.open)) await page.locator(`#${section} > summary`).click();
+}
+
 (async () => {
   let browser;
   if (!process.env.TEST_URL) await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -29,7 +50,9 @@ async function until(page, selector, text) { await page.waitForFunction(([s, t])
     const url = process.env.TEST_URL || `http://127.0.0.1:${server.address().port}`;
     await page.goto(url); await page.waitForLoadState('networkidle');
     assert.equal(await page.locator('#writing-draft').inputValue(), '');
-    assert(await page.locator('#connection-hint').isVisible());
+    assert(!(await page.locator('#connection-hint').isVisible()));
+    assert(!(await page.locator('#writing-tools').evaluate(el => el.open)));
+    assert(!(await page.locator('#suggestions-panel').isVisible()));
     assert.match(await page.locator('#flow-next-title').textContent(), /Start with/);
     assert(!(await page.locator('#selection-workbench').isVisible()));
     assert.equal(await page.locator('#writing-target option').count(), 28);
@@ -40,7 +63,7 @@ async function until(page, selector, text) { await page.waitForFunction(([s, t])
     assert.deepEqual(errors, []);
     // Authored journey: inspect intention -> Chinese check -> local repair -> explicitly scoped memory.
     await page.locator('#writing-demo-mode').click();
-    await page.locator('#intent-panel > summary').click();
+    await openTools(page, 'intent-panel');
     await page.locator('#extract-intents').click();
     assert.equal(await page.locator('.intent-card').count(), 2);
     assert(await page.locator('[data-confirm-intent]').first().evaluate(element => element === document.activeElement));
@@ -53,7 +76,7 @@ async function until(page, selector, text) { await page.waitForFunction(([s, t])
     assert(await page.locator('#habit-review-banner').isVisible());
     await page.locator('#finish-habit-review').click();
     assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('nuancebridge.memories.v2')).items.length), 0);
-    await page.locator('#open-check').click(); await page.locator('#back-translate').click();
+    await (await ready(page, '#open-check')).click(); await page.locator('#back-translate').click();
     assert.equal(await page.locator('#check-text').inputValue(), '我会在周五前发给你。');
     await page.locator('#mark-check-reviewed').click();
     assert.match(await page.locator('#flow-next-title').textContent(), /marked this version/);
@@ -80,14 +103,14 @@ async function until(page, selector, text) { await page.waitForFunction(([s, t])
     assert.equal(await page.locator('.habit-card').count(), 1);
     assert.match(await page.locator('#habit-save-result').textContent(), /Saved on this browser/);
     await page.locator('#finish-habit-review').click();
-    await page.locator('[data-panel="check"]').click();
+    await (await ready(page, '[data-panel="check"]')).click();
     assert.match(await page.locator('#snapshot-status').textContent(), /Earlier check/);
     assert(await page.locator('#repair-writing').isDisabled());
     await page.locator('#back-translate').click();
     assert.match(await page.locator('#check-text').inputValue(), /尽量/);
     await page.locator('#mark-check-reviewed').click();
     assert.match(await page.locator('#check-reviewed-status').textContent(), /Reviewed by you/);
-    await page.locator('[data-panel="history"]').click();
+    await (await ready(page, '[data-panel="history"]')).click();
     assert.match(await page.locator('#revision-events').textContent(), /habit saved/);
     // Persist only explicitly saved habits, not drafts/events/API credentials.
     await page.reload(); await page.waitForLoadState('networkidle');
@@ -113,35 +136,35 @@ async function until(page, selector, text) { await page.waitForFunction(([s, t])
       finally { if (holdRepair && data.action === 'repair') finishedRepair(); }
     });
     await page.locator('#writing-draft').fill("I'll try to send it to you by Friday.");
-    await page.locator('#context-panel > summary').click();
-    await page.locator('#writing-recipient').fill('Friend');
-    await page.locator('#writing-channel').selectOption('Email');
-    await page.locator('#analyze-writing').click();
+    await openTools(page, 'context-panel');
+    await (await ready(page, '#writing-recipient')).fill('Friend');
+    await (await ready(page, '#writing-channel')).selectOption('Email');
+    await (await ready(page, '#analyze-writing')).click();
     await page.locator('#api-key').fill('fixture-key-not-real');
     await page.locator('#settings-form button[type="submit"]').click();
-    await page.locator('#analyze-writing').click(); await until(page, '#writing-suggestions', 'small local option');
+    await (await ready(page, '#analyze-writing')).click(); await until(page, '#writing-suggestions', 'small local option');
     assert.deepEqual(sent.at(-1).preferences, ['Preserve uncertainty in tentative plans']);
     // Unmatched reader must not receive the habit.
-    await page.locator('#writing-recipient').fill('Professor');
-    await page.locator('#analyze-writing').click(); await until(page, '#writing-suggestions', 'small local option');
+    await (await ready(page, '#writing-recipient')).fill('Professor');
+    await (await ready(page, '#analyze-writing')).click(); await until(page, '#writing-suggestions', 'small local option');
     assert.deepEqual(sent.at(-1).preferences, []);
-    await page.locator('#writing-recipient').fill('Friend');
-    await page.locator('#used-habits > summary').click();
-    await page.locator('.session-habit input').uncheck();
-    await page.locator('#analyze-writing').click(); await until(page, '#writing-suggestions', 'small local option');
+    await (await ready(page, '#writing-recipient')).fill('Friend');
+    await openTools(page, 'used-habits');
+    await (await ready(page, '.session-habit input')).uncheck();
+    await (await ready(page, '#analyze-writing')).click(); await until(page, '#writing-suggestions', 'small local option');
     assert.deepEqual(sent.at(-1).preferences, []);
-    await page.locator('.session-habit input').check();
-    await page.locator('#use-writing-habits').uncheck();
+    await (await ready(page, '.session-habit input')).check();
+    await (await ready(page, '#use-writing-habits')).uncheck();
     assert.match(await page.locator('#habit-count').textContent(), /Off/);
-    await page.locator('#analyze-writing').click(); await until(page, '#writing-suggestions', 'small local option');
+    await (await ready(page, '#analyze-writing')).click(); await until(page, '#writing-suggestions', 'small local option');
     assert.deepEqual(sent.at(-1).preferences, []);
-    await page.locator('#use-writing-habits').check();
-    await page.locator('#intent-panel > summary').click(); await page.locator('#extract-intents').click();
+    await (await ready(page, '#use-writing-habits')).check();
+    await openTools(page, 'intent-panel'); await page.locator('#extract-intents').click();
     await until(page, '#intent-list', 'Keep uncertainty');
-    await page.locator('#analyze-writing').click(); await until(page, '#writing-suggestions', 'small local option');
+    await (await ready(page, '#analyze-writing')).click(); await until(page, '#writing-suggestions', 'small local option');
     assert.deepEqual(sent.at(-1).intentions, []);
-    await page.locator('.intent-card').getByRole('button', { name: 'That’s what I mean' }).click();
-    await page.locator('#analyze-writing').click(); await until(page, '#writing-suggestions', 'small local option');
+    await (await ready(page, '.intent-card')).getByRole('button', { name: 'That’s what I mean' }).click();
+    await (await ready(page, '#analyze-writing')).click(); await until(page, '#writing-suggestions', 'small local option');
     assert.equal(sent.at(-1).intentions.length, 1);
     assert.equal(sent.at(-1).intentions[0].confirmed, true);
     const card = page.locator('.suggestion-card').first();
@@ -155,17 +178,17 @@ async function until(page, selector, text) { await page.waitForFunction(([s, t])
     await page.keyboard.press('Tab'); assert(await page.locator('#express-selection').evaluate(element => element === document.activeElement));
     await page.keyboard.press('Enter'); await until(page, '#writing-suggestions', 'small local option');
     assert.equal(sent.at(-1).scope, 'selection'); assert.deepEqual(sent.at(-1).selection, { start: 0, end: 8 });
-    await page.locator('#writing-scope').selectOption('light');
-    await page.locator('#analyze-writing').click(); await until(page, '#writing-suggestions', 'small local option');
+    await (await ready(page, '#writing-scope')).selectOption('light');
+    await (await ready(page, '#analyze-writing')).click(); await until(page, '#writing-suggestions', 'small local option');
     await card.getByRole('button', { name: 'Make it my own' }).click(); await card.locator('textarea').fill('I can try');
     await card.getByRole('button', { name: 'Use this expression' }).click();
     assert.match(await page.locator('#writing-draft').inputValue(), /^I can try/);
-    await page.locator('[data-panel="history"]').click();
+    await (await ready(page, '[data-panel="history"]')).click();
     assert.match(await page.locator('#revision-events').textContent(), /I will try/);
     assert.match(await page.locator('#revision-events').textContent(), /I can try/);
-    await page.locator('#writing-undo').click();
+    await (await ready(page, '#writing-undo')).click();
     assert.match(await page.locator('#writing-draft').inputValue(), /^I'll try/);
-    await page.locator('#open-check').click(); await page.locator('#back-translate').click();
+    await (await ready(page, '#open-check')).click(); await page.locator('#back-translate').click();
     await until(page, '#snapshot-status', 'Current check');
     assert.deepEqual(Object.keys(sent.at(-1)).sort(), ['action', 'backLanguage', 'glossary', 'text']);
     // A changed flag cancels an actual in-flight repair; its eventual result is discarded.
@@ -174,26 +197,27 @@ async function until(page, selector, text) { await page.waitForFunction(([s, t])
     const started = new Promise(resolve => { startedRepair = resolve; });
     const finished = new Promise(resolve => { finishedRepair = resolve; });
     await page.locator('#repair-writing').click(); await started;
+    assert(await page.locator('#flow-next-action').isDisabled());
     await select(page, 'check-text', 0, 2); releaseRepair(); await finished; holdRepair = false;
     assert.equal(await page.locator('.suggestion-card').count(), 0);
     assert.match(await page.locator('#writing-status').textContent(), /flagged passage changed/);
     // Changes to context invalidate snapshots and pending repair previews.
     await page.locator('#mark-check-reviewed').click();
     assert.match(await page.locator('#check-reviewed-status').textContent(), /Reviewed by you/);
-    await page.locator('#writing-avoid').fill('Avoid overpromising');
+    await (await ready(page, '#writing-avoid')).fill('Avoid overpromising');
     assert(await page.locator('#repair-writing').isDisabled());
     assert.match(await page.locator('#check-reviewed-status').textContent(), /Not yet reviewed/);
-    await page.locator('#starting-draft').click(); await page.locator('#starting-preview').waitFor({ state: 'visible' });
+    await (await ready(page, '#starting-draft')).click(); await page.locator('#starting-preview').waitFor({ state: 'visible' });
     await page.locator('#accept-starting').click();
     // Selected notes move only after confirmation, and protected words reject edits.
     await page.locator('#writing-draft').fill('Hello. 不要太正式');
     await select(page, 'writing-draft', 7, 12); await page.locator('#instruction-selection').click();
     assert.equal(await page.locator('#writing-draft').inputValue(), 'Hello. ');
     assert.match(await page.locator('#selection-feedback').textContent(), /no longer in the final draft/);
-    assert.match(await page.locator('#writing-intent').inputValue(), /不要太正式/);
-    await page.locator('#writing-undo').click();
+    assert.match(await (await ready(page, '#writing-intent')).inputValue(), /不要太正式/);
+    await (await ready(page, '#writing-undo')).click();
     assert.equal(await page.locator('#writing-draft').inputValue(), 'Hello. 不要太正式');
-    assert(!((await page.locator('#writing-intent').inputValue()).includes('不要太正式')));
+    assert(!((await (await ready(page, '#writing-intent')).inputValue()).includes('不要太正式')));
     await select(page, 'writing-draft', 7, 12); await page.locator('#instruction-selection').click();
     await select(page, 'writing-draft', 0, 5); await page.locator('#protect-selection').click();
     assert.match(await page.locator('#selection-feedback').textContent(), /Kept exactly/);
@@ -241,11 +265,11 @@ async function until(page, selector, text) { await page.waitForFunction(([s, t])
     assert(!stored.includes('fixture-key-not-real')); assert(!stored.includes('Hello. ')); assert(!stored.includes('不要太正式'));
     await page.reload(); await page.waitForLoadState('networkidle');
     assert.equal(await page.locator('#writing-draft').inputValue(), '');
-    await page.locator('#writing-draft').fill('A fresh draft'); await page.locator('#analyze-writing').click();
+    await page.locator('#writing-draft').fill('A fresh draft'); await (await ready(page, '#analyze-writing')).click();
     assert(await page.locator('#settings').isVisible()); assert.equal(await page.locator('#api-key').inputValue(), ''); await page.keyboard.press('Escape');
     // Real DOM and screenshots on desktop and phone, including a fully populated workflow.
-    await page.locator('#writing-demo-mode').click(); await page.locator('#intent-panel > summary').click(); await page.locator('#extract-intents').click();
-    await page.locator('#analyze-writing').click();
+    await page.locator('#writing-demo-mode').click(); await openTools(page, 'intent-panel'); await page.locator('#extract-intents').click();
+    await (await ready(page, '#analyze-writing')).click();
     fs.mkdirSync(path.join(root, 'preview'), { recursive: true });
     await page.locator('#context-panel').evaluate(element => { element.open = false; });
     await page.locator('#intent-panel').evaluate(element => { element.open = false; });
@@ -267,13 +291,13 @@ async function until(page, selector, text) { await page.waitForFunction(([s, t])
       if (width !== 320) await page.screenshot({ path: path.join(root, `preview/writing-${width === 1440 ? 'desktop' : 'mobile'}.png`), fullPage: true, animations: 'disabled' });
     }
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.locator('#open-companion').click();
+    await (await ready(page, '#open-companion')).click();
     assert(await page.locator('#suggestions-panel').isVisible());
     await page.locator('#close-companion').click(); assert(!(await page.locator('#suggestions-panel').isVisible()));
     await page.screenshot({ path: path.join(root, 'preview/writing-mobile.png'), fullPage: true, animations: 'disabled' });
-    await page.locator('#open-companion').click(); assert(await page.locator('#suggestions-panel').isVisible()); await page.keyboard.press('Escape');
+    await (await ready(page, '#open-companion')).click(); assert(await page.locator('#suggestions-panel').isVisible()); await page.keyboard.press('Escape');
     assert(!(await page.locator('#suggestions-panel').isVisible()));
-    await page.locator('#open-check').click(); await page.locator('#back-translate').click();
+    await (await ready(page, '#open-check')).click(); await page.locator('#back-translate').click();
     await page.screenshot({ path: path.join(root, 'preview/writing-mobile-check.png'), animations: 'disabled' });
     await page.locator('#correction-note').fill('保留尽量'); await page.locator('#repair-writing').click();
     assert(await page.locator('.suggestion-card').isVisible());
@@ -326,12 +350,25 @@ async function until(page, selector, text) { await page.waitForFunction(([s, t])
       const newcomer = await browser.newPage({ viewport: { width, height: width === 320 ? 700 : 900 }, reducedMotion: 'reduce', isMobile: width < 750, hasTouch: width < 750 });
       newcomer.on('pageerror', error => errors.push(error.message)); newcomer.on('dialog', dialog => dialog.accept());
       await newcomer.goto(url); await newcomer.waitForLoadState('networkidle');
-      assert(await newcomer.locator('#connection-hint').isVisible());
-      await newcomer.locator('#connect-writing').click(); assert(await newcomer.locator('#settings').isVisible()); await newcomer.keyboard.press('Escape');
-      await newcomer.locator('#first-example').click(); assert(!(await newcomer.locator('#connection-hint').isVisible()));
+      assert(!(await newcomer.locator('#writing-tools').evaluate(el => el.open)));
+      assert(!(await newcomer.locator('#suggestions-panel').isVisible()));
+      assert(await newcomer.locator('#writing-draft').isVisible());
+      assert(await newcomer.locator('#flow-next-action').evaluate(el => el.getBoundingClientRect().bottom <= innerHeight), `Next step is in the first screen at ${width}`);
+      for (const id of ['writing-intent', 'extract-intents', 'check-output', 'habit-form']) assert(!(await newcomer.locator(`#${id}`).isVisible()));
+      assert(await newcomer.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+      await newcomer.screenshot({ path: path.join(root, `preview/minimal-${width}.png`), fullPage: true, animations: 'disabled' });
+      await newcomer.locator('#open-settings').click(); assert(await newcomer.locator('#settings').isVisible()); await newcomer.keyboard.press('Escape');
+      await newcomer.locator('#writing-demo-mode').click();
+      assert(!(await newcomer.locator('#writing-tools').evaluate(el => el.open)));
+      await newcomer.locator('#flow-next-action').click();
+      assert(await newcomer.locator('#suggestions-panel').isVisible());
+      await newcomer.locator('#close-companion').click();
       await select(newcomer, 'writing-draft', 0, 4); await newcomer.locator('#protect-selection').click();
-      assert.match(await newcomer.locator('#selection-feedback').textContent(), /Kept exactly/); await newcomer.locator('#writing-undo').click();
-      await newcomer.locator('#flow-intention').click(); await newcomer.locator('#extract-intents').click();
+      assert.match(await newcomer.locator('#selection-feedback').textContent(), /Kept exactly/); await (await ready(newcomer, '#writing-undo')).click();
+      await newcomer.locator('#flow-intention').click();
+      assert(!(await newcomer.locator('#writing-tools').evaluate(el => el.open)));
+      assert(!(await newcomer.locator('#writing-channel').isVisible()));
+      await newcomer.locator('#extract-intents').click();
       await newcomer.locator('[data-confirm-intent]').first().click();
       assert(await newcomer.locator('[data-confirm-intent]').first().evaluate(element => element === document.activeElement));
       await newcomer.locator('.intent-card').first().locator('.intent-edit > summary').click();
@@ -342,7 +379,7 @@ async function until(page, selector, text) { await page.waitForFunction(([s, t])
       assert(await newcomer.locator('#back-from-intentions').evaluate(element => element === document.activeElement));
       await newcomer.locator('#back-from-intentions').click();
       assert(await newcomer.locator('#writing-draft').evaluate(element => element === document.activeElement));
-      await newcomer.locator('#open-check').click(); assert(!(await newcomer.locator('#check-output').isVisible()));
+      await newcomer.locator('#flow-check').click(); assert(!(await newcomer.locator('#check-output').isVisible()));
       await newcomer.locator('#back-translate').click(); assert(await newcomer.locator('#check-draft-comparison').evaluate(element => element.open));
       await newcomer.locator('[data-mismatch]').first().click(); await newcomer.locator('#repair-writing').click();
       await newcomer.locator('.suggestion-card').getByRole('button', { name: 'Use this expression' }).click();
@@ -352,7 +389,7 @@ async function until(page, selector, text) { await page.waitForFunction(([s, t])
       if (width === 1440) {
         await newcomer.locator('#dismiss-memory').click();
         assert.equal(await newcomer.locator('#decision-result [data-remember-candidate]').count(), 0);
-        await newcomer.locator('#writing-undo').click(); await newcomer.locator('#open-check').click();
+        await (await ready(newcomer, '#writing-undo')).click(); await newcomer.locator('#flow-check').click();
         await newcomer.locator('#back-translate').click(); await newcomer.locator('[data-mismatch]').first().click();
         await newcomer.locator('#repair-writing').click(); await newcomer.locator('.suggestion-card').getByRole('button', { name: 'Use this expression' }).click();
       }
@@ -365,7 +402,7 @@ async function until(page, selector, text) { await page.waitForFunction(([s, t])
       await newcomer.locator('#habit-form button[type="submit"]').click(); await newcomer.locator('#finish-habit-review').click();
       assert(await newcomer.locator('#writing-draft').evaluate(element => element === document.activeElement));
       if (width < 750) assert(!(await newcomer.locator('#suggestions-panel').isVisible()), 'Returning from habit review reveals the actual draft');
-      await newcomer.locator('#open-check').click(); assert.match(await newcomer.locator('#back-translate').textContent(), /updated draft/);
+      await newcomer.locator('#flow-check').click(); assert.match(await newcomer.locator('#back-translate').textContent(), /updated draft/);
       await newcomer.locator('#back-translate').click(); await newcomer.locator('#mark-check-reviewed').click();
       assert(await newcomer.locator('#copy-checked-draft').isVisible());
       await newcomer.evaluate(() => { navigator.clipboard.writeText = async text => { window.fixtureCopiedDraft = text; }; });
@@ -374,7 +411,10 @@ async function until(page, selector, text) { await page.waitForFunction(([s, t])
       assert(await newcomer.locator('#toast').evaluate(element => Number(getComputedStyle(element).zIndex) > Number(getComputedStyle(document.getElementById('suggestions-panel')).zIndex || 0) || matchMedia('(min-width:751px)').matches));
       assert.equal(await newcomer.locator('#correction-note').inputValue(), '');
       await newcomer.locator('#return-to-writing').click();
-      await newcomer.locator('#writing-live-mode').click(); await newcomer.locator('#open-check').click();
+      assert.match(await newcomer.locator('#flow-next-action').textContent(), /Copy my draft/);
+      await newcomer.locator('#flow-next-action').click();
+      assert.equal(await newcomer.evaluate(() => window.fixtureCopiedDraft), await newcomer.locator('#writing-draft').inputValue());
+      await newcomer.locator('#writing-live-mode').click(); await newcomer.locator('#flow-check').click();
       assert.match(await newcomer.locator('#snapshot-status').textContent(), /Earlier check/);
       assert(await newcomer.locator('#repair-writing').isDisabled());
       await newcomer.reload(); await newcomer.waitForLoadState('networkidle');

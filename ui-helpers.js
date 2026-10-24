@@ -10,7 +10,23 @@ export function download(name, content, type = 'text/plain;charset=utf-8') {
   const link = make('a'); link.href = url; link.download = name; document.body.append(link); link.click(); link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+export function expandWritingTools(section) {
+  if (section === 'intent-panel') {
+    $('writing-tools').open = false;
+    $('suggestions-panel').classList.remove('is-open');
+    $('intent-panel').hidden = false; $('intent-panel').open = true;
+    return;
+  }
+  $('intent-panel').hidden = true; $('intent-panel').open = false;
+  $('writing-tools').open = true;
+  if (section) $(section).open = true;
+}
+export function closeWritingTools() {
+  $('writing-tools').open = false;
+  $('intent-panel').hidden = true; $('intent-panel').open = false;
+}
 export function showPanel(name, open = true) {
+  if (open) closeWritingTools();
   for (const value of ['suggestions', 'check', 'history']) {
     $(`panel-${value}`).hidden = value !== name;
     const tab = document.querySelector(`[data-panel="${value}"]`);

@@ -4,7 +4,7 @@
 
 [Open on Vercel](https://nuancebridge.vercel.app/) · [GitHub Pages](https://lee-arts-02.github.io/informal-translation-companion/) · [Deployment checks](https://github.com/Lee-arts-02/informal-translation-companion/actions)
 
-![The writing workspace](preview/writing-desktop.png)
+![The writing workspace](preview/minimal-1440.png)
 
 ## A connected writing journey
 
@@ -16,7 +16,9 @@
 
 The **“尽量” is not a promise** authored example demonstrates the complete journey without an API key: inspect intent, see the overstatement in Chinese, explain that “尽量” means trying rather than guaranteeing, accept a local English repair, and optionally save a scoped habit. Three additional examples explore warmth, boundaries and a cultural idiom. All demos are clearly labeled authored; changed wording outside their curated variants requires live mode. The authored repair fixture supports the uncertainty example, not arbitrary feedback.
 
-The journey strip keeps the current goal visible and offers optional routes between intention, wording, meaning checks and future habits. Its next-action cue reflects the current session state rather than a mandatory completion score. **What will be provided to AI?** separates explicit context and confirmed intention cards from pending interpretations, and indicates when text or inputs changed after a request. Pending model guesses are not sent as writing instructions until the user confirms them.
+The default workspace shows the draft and **one current next action**. Quiet **Intentions**, **Check meaning** and **Expression habits** entries open support only when requested. Intention editing opens independently; context, detailed settings, history, original comparison and input transparency stay inside **More tools**. The companion is absent until suggestions or a check are opened; returning to the draft closes it. Examples and project background are collapsed too. This hierarchy is the same on desktop and phones, with a responsive editor height that keeps the next action in view.
+
+The next action reflects the current session state rather than a mandatory completion score. **What will be provided to AI?**, inside More tools, separates explicit context and confirmed intention cards from pending interpretations, and indicates when text or inputs changed after a request. Pending model guesses are not sent as writing instructions until the user confirms them.
 
 Language checks guide the writer through **read → decide → refine**. The current draft can be viewed alongside the other-language snapshot; mismatch prompts help start feedback without overwriting existing notes. **This matches what I mean** records the writer's judgment for that exact check version, not model-verified accuracy. Text/context changes invalidate that status. Candidate habits open directly in an unsaved review form with source, editable wording, scope presets, a plain-language matching preview and an explicit return-to-draft path. Confirming a draft intention and saving a future habit remain separate actions.
 
@@ -24,7 +26,7 @@ On phones the companion opens as a dismissible bottom panel, preserving the draf
 
 ## First visit and next steps
 
-The entry hint distinguishes the free authored example from personal live use before requesting an API key. Intention confirmation, editing and removal retain keyboard focus; **Back to writing** returns directly to the draft. After accepting or keeping wording, the visible companion panel shows the outcome and offers **Check this version**, an optional habit review when relevant, and **Keep writing**. This also keeps habit saving reachable inside the phone panel.
+**Try an example** provides a free authored walkthrough; personal live use connects through API settings or the contextual next action after writing. Additional connection details are available in More tools. Intention confirmation, editing and removal retain keyboard focus; **Back to writing** returns directly to the draft and closes tools. After accepting or keeping wording, the visible companion panel shows the outcome and offers **Check this version**, an optional habit review when relevant, and **Keep writing**. This also keeps habit saving reachable inside the phone panel.
 
 The checking form reveals results only after a check exists, expands the current-draft comparison, and labels stale checks with an update action. Marking a version as matching resolves the active mismatch note (retained in the session record) and exposes a copy action. Authored checks retain their source label and become stale when switching to live mode. Curated examples disclose which repair paths they support instead of offering nonfunctional feedback buttons.
 

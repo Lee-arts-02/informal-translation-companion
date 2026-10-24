@@ -1,11 +1,9 @@
 import { $, make } from './ui-helpers.js';
 
-export function initFlowGuide({ editGoal, reviewIntentions = editGoal, write, check, remember }) {
+export function initFlowGuide({ editGoal, reviewIntentions = editGoal, write, check, refine, copy }) {
   let next = write;
   $('flow-intention').addEventListener('click', reviewIntentions);
-  $('flow-writing').addEventListener('click', write);
   $('flow-check').addEventListener('click', check);
-  $('flow-memory').addEventListener('click', remember);
   $('edit-draft-goal').addEventListener('click', editGoal);
   $('flow-next-action').addEventListener('click', () => next());
   return { refresh(state) {
@@ -19,27 +17,23 @@ export function initFlowGuide({ editGoal, reviewIntentions = editGoal, write, ch
     if (pending) $('confirmed-input-list').append(make('p', `${pending} AI interpretation(s) awaiting your judgment — not used as writing instructions.`, 'help'));
     $('request-input-status').textContent = !state.lastInputs ? 'No request yet. Nothing is sent until you ask.'
       : `${state.demo ? 'Authored demo step' : 'Last request'}: ${state.lastInputs.action} · revision ${state.lastInputs.revision}. ${state.lastInputs.signature === state.signature && state.lastInputs.revision === state.revision ? 'These inputs are still current.' : 'Your text or inputs have changed since that request.'}`;
-    let title, detail, action, current = 'writing';
+    let title, detail, action;
     if (!state.text.trim()) {
-      title = 'Start with what you want to say.'; detail = 'Write in any language. You can add a goal later.'; action = ['Start writing', write];
+      title = 'Start with a few words.'; detail = 'Any language, or a mix.'; action = ['Start writing', write];
     } else if (state.reviewed) {
-      title = 'You marked this version as matching your meaning.'; detail = 'You can copy it when ready. Saving a future habit is optional, and this is your judgment rather than a guarantee.'; action = ['Back to my draft', write]; current = 'check';
+      title = 'You marked this version as matching.'; detail = 'Copy when ready. Remembering is optional.'; action = ['Copy my draft', copy];
     } else if (state.suggestions) {
-      title = `${state.suggestions} expression option(s) to consider.`; detail = 'Review the offered wording. Nothing changes until you choose it; keeping your wording is always valid.'; action = ['Review my wording', write];
+      title = `${state.suggestions} suggestion${state.suggestions === 1 ? '' : 's'} ready.`; detail = 'Nothing changes until you choose an option.'; action = ['Review suggestions', write];
     } else if (state.snapshot && !state.fresh) {
-      title = 'Your wording or context changed after the last check.'; detail = 'The earlier view is kept for reference. Create a new check before reviewing or repairing this version.'; action = ['Check the new version', check]; current = 'check';
+      title = 'This check is out of date.'; detail = 'Create a new check for this version.'; action = ['Check updated draft', check];
     } else if (state.fresh) {
-      title = 'Read the language check and decide what fits.'; detail = 'Mark a mismatch and explain it, or say this version matches your meaning. You can keep editing either way.'; action = ['Continue my check', check]; current = 'check';
+      title = 'Does the meaning still fit?'; detail = 'Flag a mismatch, or mark it as matching.'; action = ['Continue my check', check];
     } else if (pending) {
-      title = 'Does this interpretation fit what you mean?'; detail = 'AI guesses are not yet instructions. Confirm, edit or remove them; you can also continue writing without them.'; action = ['Review my intentions', reviewIntentions]; current = 'intention';
+      title = 'Does this interpretation fit?'; detail = 'Only confirmed intentions guide writing.'; action = ['Review intentions', reviewIntentions];
     } else {
-      title = 'Shape your words, then check any meaning you’re unsure about.'; detail = 'Ask for local suggestions or inspect the draft in a familiar language. No step is required to copy your writing.'; action = ['Check my meaning', check];
+      title = 'Ready for a little help?'; detail = state.demo ? 'Authored example · no API key needed.' : state.connected ? 'Suggestions change nothing until you accept.' : 'Personal AI suggestions use your own API key.'; action = [state.demo || state.connected ? 'Get suggestions' : 'Connect my AI', refine];
     }
-    if (state.candidate && !state.suggestions) detail += ' You can also review the optional habit suggested by your correction.';
     $('flow-next-title').textContent = title; $('flow-next-detail').textContent = detail;
     $('flow-next-action').textContent = action[0]; next = action[1];
-    for (const key of ['intention', 'writing', 'check', 'memory']) {
-      const node = $(`flow-${key}`); if (key === current) node.setAttribute('aria-current', 'step'); else node.removeAttribute('aria-current');
-    }
   } };
 }

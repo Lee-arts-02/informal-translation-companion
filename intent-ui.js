@@ -1,4 +1,4 @@
-import { $, make, button } from './ui-helpers.js';
+import { $, make, button, expandWritingTools } from './ui-helpers.js';
 import { makeIntent, reviseIntent } from './intent-state.js';
 
 export function initIntentPanel({ changed, event, fail, remember, getRevision }) {
@@ -45,7 +45,7 @@ export function initIntentPanel({ changed, event, fail, remember, getRevision })
     propose(proposed) {
       const additions = proposed.filter(item => !items.some(x => x.content === item.content));
       items = [...items, ...additions.map(x => ({ ...x, evidenceRevision: getRevision() }))].slice(0, 12);
-      render(); $('intent-panel').open = true; changed();
+      render(); expandWritingTools('intent-panel'); changed();
       focusNext();
     } };
 }
