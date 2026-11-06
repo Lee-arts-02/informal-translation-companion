@@ -1,3 +1,4 @@
+import { setupTranslation } from './canvas-translation.js';
 import { requestCompletion } from './translation.js';
 import { sentenceScope, wordDiff, applyRevision, revisionRequest, parseRevision } from './canvas-state.js';
 import { selectionRect, placeToolbar } from './selection-position.js';
@@ -17,6 +18,7 @@ let text = '', focus = null, proposal = null, lastAccepted = null, undo = null;
 let mode = 'write', showChanges = true, example = false, key = '', model = 'openrouter/auto';
 let controller = null, generation = 0, drawing = null, anchor = null;
 let noteReady = false;
+let translationTools;
 const t = name => copy[language][name] || copy.en[name] || name;
 const status = name => { $('status').textContent = t(name); };
 const el = (tag, content, className) => {
@@ -31,7 +33,7 @@ function localize() {
   for (const [id, name] of [['draft','placeholder'], ['goal','goalPlaceholder'], ['intent-input','intentPlaceholder']]) $(id).placeholder = t(name);
   $('close-popover').ariaLabel = t('close'); $('clear-note').ariaLabel = t('dismissNote');
   document.querySelectorAll('[data-close]').forEach(node => { node.ariaLabel = t('close'); });
-  renderHabits(); render(); $('status').textContent = ''; $('error').hidden = true;
+  translationTools?.render(); renderHabits(); render(); $('status').textContent = ''; $('error').hidden = true;
 }
 function hidePopover() { if ($('intent-popover').matches(':popover-open')) $('intent-popover').hidePopover(); }
 function clearError() { $('error').hidden = true; $('error').textContent = ''; }
@@ -231,10 +233,10 @@ $('ui-language').addEventListener('change', () => {
 });
 $('connect').addEventListener('click', () => { hidePopover(); $('connection').showModal(); $('canvas-key').focus(); });
 $('connection-form').addEventListener('submit', event => {
-  event.preventDefault(); abortRequest(); key = $('canvas-key').value.trim(); model = $('canvas-model').value.trim();
+  event.preventDefault(); translationTools.cancel(); abortRequest(); key = $('canvas-key').value.trim(); model = $('canvas-model').value.trim();
   $('canvas-key').value = ''; $('connection').close(); render(); status('connectionSaved');
 });
-$('disconnect').addEventListener('click', () => { abortRequest(); key = ''; $('canvas-key').value = ''; $('connection').close(); render(); status('keyCleared'); });
+$('disconnect').addEventListener('click', () => { translationTools.cancel(); abortRequest(); key = ''; $('canvas-key').value = ''; $('connection').close(); render(); status('keyCleared'); });
 document.querySelectorAll('[data-close]').forEach(button => button.addEventListener('click', () => $(button.dataset.close).close()));
 
 function renderHabits() {
@@ -247,6 +249,7 @@ function renderHabits() {
   });
 }
 function persistHabits() {
+  translationTools.invalidate();
   try { if (!storage) throw new Error(); storage.setItem('nuancebridge.canvas.habits', JSON.stringify(habits)); status('saved'); }
   catch { status('storageError'); }
 }
@@ -265,11 +268,22 @@ document.addEventListener('pointerdown', event => {
 window.addEventListener('resize', () => { resizeDraft(); positionPopover(); });
 window.addEventListener('scroll', positionPopover, true);
 window.visualViewport?.addEventListener('resize', positionPopover);
-window.addEventListener('pagehide', () => { abortRequest(); key = ''; $('canvas-key').value = ''; });
+window.addEventListener('pagehide', () => { translationTools.cancel(); abortRequest(); key = ''; $('canvas-key').value = ''; });
 document.addEventListener('keydown', event => {
   if (event.key === 'Escape') hidePopover();
   if (event.key === 'Tab' && !event.shiftKey && event.target === $('draft') && $('intent-popover').matches(':popover-open')) {
     event.preventDefault(); $('intent-input').focus();
   }
+});
+translationTools = setupTranslation({ t,
+  connection: () => ({ apiKey:key, model }), preferences: () => habits,
+  connect: () => { hidePopover(); $('connection').showModal(); $('canvas-key').focus(); },
+  adopt: value => {
+    if (text.trim() && !confirm(t('replaceDraftTranslation'))) return false;
+    abortRequest(); hidePopover(); clearError();
+    undo = { text, lastAccepted, focus, example };
+    text = value; focus = null; proposal = null; lastAccepted = null; example = false; mode = 'write';
+    render(); $('draft').focus(); status('translationUsed'); return true;
+  },
 });
 localize();

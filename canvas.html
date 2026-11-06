@@ -11,6 +11,33 @@
   <header class="app-header"><a href="./" class="brand">NuanceBridge<span>↗</span></a><div class="header-tools"><label class="language-label"><span data-i18n="interface">Interface</span><select id="ui-language" aria-label="Interface language"><option value="en">English</option><option value="zh">中文</option></select></label><button id="connect" data-i18n="connect">Connect AI</button></div></header>
   <main>
     <div class="canvas-heading"><div><p class="eyebrow" data-i18n="eyebrow">A LITTLE ROOM TO THINK</p><h1 data-i18n="title">Make it sound like you.</h1><p class="intro" data-i18n="intro">Write in any language. Mark a thought. Shape the sentence.</p></div><button id="example" class="quiet" data-i18n="example">Try an example ↗</button></div>
+    <details id="translation-tools" class="translation-tools">
+      <summary data-i18n="translationTools">Translate a thought into your draft</summary>
+      <p class="tool-help" data-i18n="translationHelp">Choose context, compare expressions, then decide whether to use one in your draft.</p>
+      <div id="scenario-presets" class="note-actions" role="group" aria-label="Authored scenarios"></div>
+      <form id="canvas-translation-form">
+        <label for="translation-source" data-i18n="sourceThought">Your original thought</label>
+        <textarea id="translation-source" rows="3" maxlength="6000" dir="auto" required></textarea>
+        <div class="translation-context">
+          <label><span data-i18n="sourceLanguage">Source language</span><select id="translation-source-language"><option value="Auto-detect" data-i18n="option_autodetect">Auto-detect</option><option value="Urdu" data-i18n="option_urdu">Urdu</option><option value="Spanish" data-i18n="option_spanish">Spanish</option><option value="French" data-i18n="option_french">French</option><option value="Chinese" data-i18n="option_chinese">Chinese</option><option value="Hindi" data-i18n="option_hindi">Hindi</option><option value="Arabic" data-i18n="option_arabic">Arabic</option><option value="English" data-i18n="option_english">English</option></select></label>
+          <label><span data-i18n="targetLanguage">Writing language</span><select id="translation-target-language"><option value="English" data-i18n="option_english">English</option><option value="Chinese" data-i18n="option_chinese">Chinese</option><option value="Urdu" data-i18n="option_urdu">Urdu</option><option value="Spanish" data-i18n="option_spanish">Spanish</option><option value="French" data-i18n="option_french">French</option><option value="Hindi" data-i18n="option_hindi">Hindi</option><option value="Arabic" data-i18n="option_arabic">Arabic</option></select></label>
+          <label><span data-i18n="recipient">Recipient</span><select id="translation-recipient"><option value="Friend" data-i18n="option_friend">Friend</option><option value="Supervisor" data-i18n="option_supervisor">Supervisor</option><option value="Support group" data-i18n="option_supportgroup">Support group</option><option value="Group chat" data-i18n="option_groupchat">Group chat</option><option value="Client" data-i18n="option_client">Client</option></select></label>
+          <label><span data-i18n="channel">Channel</span><select id="translation-channel"><option value="Text message" data-i18n="option_textmessage">Text message</option><option value="Email" data-i18n="option_email">Email</option><option value="Community forum" data-i18n="option_communityforum">Community forum</option></select></label>
+          <label><span data-i18n="tone">Tone</span><select id="translation-tone"><option value="Natural" data-i18n="option_natural">Natural</option><option value="Warm" data-i18n="option_warm">Warm</option><option value="Humorous" data-i18n="option_humorous">Humorous</option><option value="Sarcastic" data-i18n="option_sarcastic">Sarcastic</option><option value="Professional" data-i18n="option_professional">Professional</option><option value="Empathetic" data-i18n="option_empathetic">Empathetic</option><option value="Direct" data-i18n="option_direct">Direct</option></select></label>
+        </div>
+        <label class="habit-toggle"><input id="translation-use-habits" type="checkbox" checked><span data-i18n="translationHabits">Use my saved writing preferences</span></label>
+        <p class="tool-help" data-i18n="translationPrivacy">Live translation sends this original thought, chosen context and enabled preferences to OpenRouter. Your draft is not sent.</p>
+        <div class="note-actions"><button id="translation-submit" class="primary" data-i18n="translateThought">Preview translation</button><button id="translation-cancel" type="button" hidden data-i18n="cancel">Cancel</button></div>
+      </form>
+      <p id="translation-status" role="status" aria-live="polite"></p>
+      <section id="translation-result" hidden aria-label="Translation preview">
+        <p id="translation-origin" class="source-label"></p><div id="translation-versions" class="translation-versions" role="group" aria-label="Expression versions"></div>
+        <blockquote id="translation-output" dir="auto"></blockquote>
+        <details><summary data-i18n="nuanceTitle">Cultural meaning & expression choices</summary><p id="translation-nuance"></p></details>
+        <p id="translation-preferences" class="tool-help"></p>
+        <button id="translation-apply" type="button" class="primary" data-i18n="useTranslation">Use as draft (replaces current text)</button>
+      </section>
+    </details>
     <section class="canvas" aria-label="Writing canvas">
       <div class="document-toolbar"><div class="mode-group" role="group" aria-label="Marking mode"><button id="write-mode" class="selected" aria-pressed="true" data-i18n="write">Write & select</button><button id="pen-mode" aria-pressed="false" data-i18n="pen">Underline</button></div><div class="document-actions"><button id="undo" disabled data-i18n="undo">Undo</button><button id="show-changes" hidden aria-pressed="true" data-i18n="hideChanges">Hide changes</button><button id="edit-draft" hidden data-i18n="edit">Keep writing</button><button id="copy" data-i18n="copy">Copy text ↗</button></div></div>
       <div class="paper"><label class="sr-only" for="draft" data-i18n="draftLabel">Your draft</label><textarea id="draft" rows="8" maxlength="6000" dir="auto" placeholder="Start with what you want to say…"></textarea><div id="document-view" class="document-view" dir="auto" hidden></div><div class="paper-footer"><span id="document-hint" data-i18n="hint">Select the words you want to work on.</span><span id="count">0 / 6,000</span></div></div><p id="source-label" class="source-label" hidden></p>
