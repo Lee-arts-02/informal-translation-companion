@@ -1,5 +1,11 @@
 # NuanceBridge
 
+## Writing Canvas
+
+Open `canvas.html` (also linked as **Writing canvas** from the home page) for document-first revision. English is the default interface; Chinese is available through the interface picker. Write or paste a draft, select or underline a phrase, and add a short revision goal. The preview shows the enclosing sentence directly in the document, with deleted and added text and a separate highlight for supporting changes outside the selection. Changes are never applied until accepted. Accepted changes remain visible; **Keep writing**, **Show/Hide changes**, **Undo**, and copying clean text are available.
+
+**Try an example** is explicitly authored and needs no key. Personal previews use your OpenRouter key, kept only in the tab; text is sent only on request. Saving a writing preference is a separate, explicit browser-local action, with review, removal and an option to exclude preferences from a preview. Existing translation, language-check, and detailed habit tools remain available from the canvas footer. Canvas preferences are independent of the older tool's context-scoped habits.
+
 **Find the words. Keep your meaning.** A multilingual writing companion for shaping a message without giving up your meaning, cultural expressions or final say.
 
 [Open on Vercel](https://nuancebridge.vercel.app/) · [GitHub Pages](https://lee-arts-02.github.io/informal-translation-companion/) · [Deployment checks](https://github.com/Lee-arts-02/informal-translation-companion/actions)
