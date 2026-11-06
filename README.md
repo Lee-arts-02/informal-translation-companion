@@ -2,6 +2,10 @@
 
 ## Writing Canvas
 
+**Translate a thought into your draft** brings the earlier prototype's translation tools into the existing canvas layout. Expand it to choose a source/writing language, recipient, channel and tone; compare suggested, casual, direct and polished versions; and inspect cultural/register explanations. The Urdu, Spanish and French scenarios are authored examples and make no AI request. Editing their inputs clears the old preview; personal translation uses the existing tab-only OpenRouter connection.
+
+Translation requests send only the translation input, chosen context and explicitly enabled canvas preferences, not the writing canvas draft. Supplied preferences are listed without claiming causal influence. **Use as draft** requires confirmation when replacing existing text and supports the canvas Undo action. There is no automatic preference learning or numerical confidence score.
+
 Open `canvas.html` (also linked as **Writing canvas** from the home page) for document-first revision. English is the default interface; Chinese is available through the interface picker. Write or paste a draft, select or underline a phrase, and add a short revision goal. The preview shows the enclosing sentence directly in the document, with deleted and added text and a separate highlight for supporting changes outside the selection. Changes are never applied until accepted. Accepted changes remain visible; **Keep writing**, **Show/Hide changes**, **Undo**, and copying clean text are available.
 
 **Try an example** is explicitly authored and needs no key. Personal previews use your OpenRouter key, kept only in the tab; text is sent only on request. Saving a writing preference is a separate, explicit browser-local action, with review, removal and an option to exclude preferences from a preview. Existing translation, language-check, and detailed habit tools remain available from the canvas footer. Canvas preferences are independent of the older tool's context-scoped habits.
