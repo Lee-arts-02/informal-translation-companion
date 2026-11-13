@@ -2,6 +2,9 @@ import { requestCompletion } from './translation.js';
 import { sentenceScope, wordDiff, applyRevision, revisionRequest, parseRevision } from './canvas-state.js';
 import { selectionRect, placeToolbar } from './selection-position.js';
 import { copy } from './canvas-i18n.js';
+import { addMark, addNote, addGoal, rebaseNotes, notesInScope, minimalEdit } from './canvas-notes.js';
+import { renderMarkedText, renderNoteList } from './canvas-note-ui.js';
+import { checkConnection } from './canvas-connection.js';
 
 const $ = id => document.getElementById(id);
 const EXAMPLE = "I'll send you the draft on Friday. If I'm delayed, I'll let you know in advance.";
@@ -17,6 +20,9 @@ let text = '', focus = null, proposal = null, lastAccepted = null, undo = null;
 let mode = 'write', showChanges = true, example = false, key = '', model = 'openrouter/auto';
 let controller = null, generation = 0, drawing = null, anchor = null;
 let noteReady = false;
+let notes = [], activeId = null, editing = true;
+let verifiedKey = '', connectionCheck = null, reconnectId = null;
+const activeNote = () => notes.find(n => n.id === activeId);
 const t = name => copy[language][name] || copy.en[name] || name;
 const status = name => { $('status').textContent = t(name); };
 const el = (tag, content, className) => {
@@ -43,44 +49,53 @@ function renderDocument() {
   const revision = proposal || lastAccepted;
   const tracked = !!proposal || !!lastAccepted && showChanges;
   const view = $('document-view'); view.replaceChildren();
-  $('draft').hidden = tracked || mode === 'pen'; view.hidden = !tracked && mode !== 'pen';
+  const marked = mode === 'pen' || notes.length > 0 && !editing;
+  $('draft').hidden = tracked || marked; view.hidden = !tracked && !marked;
   view.dataset.pen = String(mode === 'pen' && !tracked);
   if (tracked) {
-    view.append(document.createTextNode(revision.before.slice(0, revision.scope.start)));
-    for (const part of wordDiff(revision.scope.text, revision.replacement, {
+    const anchors = (revision.beforeNotes || notes).filter(n => notes.some(current => current.id === n.id));
+    renderMarkedText(view, revision.before.slice(0, revision.scope.start), anchors);
+    for (const part of wordDiff(revision.scope.text, revision.replacement, revision.focuses || [{
       start: revision.focus.start - revision.scope.start, end: revision.focus.end - revision.scope.start,
-    })) view.append(el(part.kind === 'same' ? 'span' : part.kind === 'add' ? 'ins' : 'del', part.text,
-      part.outside ? part.kind === 'del' ? 'supporting-del' : 'supporting' : ''));
-    view.append(document.createTextNode(revision.before.slice(revision.scope.end)));
-  } else if (mode === 'pen') {
-    let pos = 0;
-    for (const char of Array.from(text)) {
-      const span = el('span', char, focus && pos >= focus.start && pos < focus.end ? 'focus-mark' : '');
-      span.dataset.start = pos; pos += char.length; span.dataset.end = pos; view.append(span);
+    }])) {
+      if (part.kind === 'same') renderMarkedText(view, part.text, anchors, revision.scope.start + part.pos);
+      else {
+        const change = el(part.kind === 'add' ? 'ins' : 'del', undefined,
+          part.outside ? part.kind === 'del' ? 'supporting-del' : 'supporting' : '');
+        if (part.kind === 'del') renderMarkedText(change, part.text, anchors, revision.scope.start + part.pos);
+        else change.textContent = part.text;
+        view.append(change);
+      }
     }
+    renderMarkedText(view, revision.before.slice(revision.scope.end), anchors, revision.scope.end);
+  } else if (marked) {
+    renderMarkedText(view, text, notes);
   }
   $('legend').hidden = !tracked;
   $('revision-state').textContent = t(proposal ? 'pending' : 'applied');
-  $('edit-draft').hidden = !tracked;
+  $('edit-draft').hidden = !tracked && !marked;
   $('show-changes').hidden = !lastAccepted || !!proposal;
   $('show-changes').textContent = t(showChanges ? 'hideChanges' : 'showChanges');
   $('show-changes').setAttribute('aria-pressed', String(showChanges));
   $('document-hint').textContent = t(tracked ? 'focusHint' : mode === 'pen' ? 'penHint' : 'hint');
 }
 function hasSupporting(revision) {
-  return wordDiff(revision.scope.text, revision.replacement, { start: revision.focus.start - revision.scope.start,
-    end: revision.focus.end - revision.scope.start }).some(x => x.outside);
+  return wordDiff(revision.scope.text, revision.replacement, revision.focuses || [{ start: revision.focus.start - revision.scope.start,
+    end: revision.focus.end - revision.scope.start }]).some(x => x.outside);
 }
 function render() {
   $('draft').value = text; resizeDraft(); renderDocument();
   $('count').textContent = `${text.length.toLocaleString()} / 6,000`;
   $('copy').disabled = !text.trim(); $('undo').disabled = !undo;
-  $('connect').textContent = t(key ? 'connected' : 'connect');
+  $('connect').textContent = t(key && verifiedKey === key ? 'keyVerified' : key ? 'connected' : 'connect');
   $('source-label').hidden = !example && !proposal && !lastAccepted;
   $('source-label').textContent = t((proposal || lastAccepted)?.source === 'live' ? 'modeLive' : 'modeExample');
   $('revision-note').hidden = !proposal && !lastAccepted && (!focus || !noteReady);
   $('focus-quote').textContent = `“${(proposal || lastAccepted)?.focusText || (focus ? text.slice(focus.start, focus.end) : '')}”`;
   $('revision-form').hidden = !!proposal || !!lastAccepted;
+  $('goal').required = false;
+  $('goal').placeholder = t('addRequirement');
+  renderNoteList($('notes-list'), notes, activeId, t, selectNote, removeNote, removeRequirement);
   $('review-actions').hidden = !proposal; $('remember-row').hidden = !lastAccepted || !!proposal;
   $('reason').hidden = !(proposal || lastAccepted)?.reason;
   $('reason').textContent = (proposal || lastAccepted)?.reason || '';
@@ -96,7 +111,7 @@ function render() {
 }
 function positionPopover() {
   if (!$('intent-popover').matches(':popover-open') || !anchor) return;
-  if (mode === 'write' && focus) anchor = selectionRect($('draft'), focus.start, focus.end);
+  if (mode === 'write' && focus && !$('draft').hidden) anchor = selectionRect($('draft'), focus.start, focus.end);
   if (!anchor) { hidePopover(); return; }
   const vv = window.visualViewport, size = $('intent-popover').getBoundingClientRect();
   const placed = placeToolbar(anchor, size, { left: vv?.offsetLeft || 0, top: vv?.offsetTop || 0,
@@ -107,7 +122,18 @@ function mark(start, end, rect) {
   if (start === end || !rect) return;
   abortRequest(); clearError(); proposal = null; lastAccepted = null;
   focus = { start, end }; anchor = rect; noteReady = false;
+  activeId = notes.find(n => n.start === start && n.end === end)?.id
+    || (notes.some(n => n.id === reconnectId && n.start === null) ? reconnectId : null);
+  if (!activeId) {
+    try { notes = addMark(notes, text, start, end); activeId = notes.find(n => n.start === start && n.end === end).id; }
+    catch (error) { report(error); return; }
+  }
+  editing = false;
   $('intent-input').value = ''; $('goal').value = '';
+  const reconnecting = activeNote()?.start === null;
+  $('intent-input').required = !reconnecting;
+  $('intent-input').placeholder = t(reconnecting ? 'optionalRequirement' : 'intentPlaceholder');
+  $('intent-form').querySelector('button[type=submit]').textContent = t(reconnecting ? 'reconnectNote' : 'addNote');
   render(); $('intent-popover').showPopover(); positionPopover();
 }
 function captureSelection() {
@@ -118,8 +144,9 @@ function captureSelection() {
 $('draft').addEventListener('pointerup', captureSelection);
 $('draft').addEventListener('keyup', event => { if (event.key === 'Shift') captureSelection(); });
 $('draft').addEventListener('input', () => {
-  abortRequest(); hidePopover(); clearError(); text = $('draft').value;
-  focus = null; proposal = null; lastAccepted = null; undo = null; example = false; render(); status('draftChanged');
+  abortRequest(); hidePopover(); clearError(); const next = $('draft').value;
+  const edit = minimalEdit(text, next); notes = rebaseNotes(notes, edit.scope, edit.replacement, text); text = next;
+  focus = null; activeId = null; proposal = null; lastAccepted = null; undo = null; example = false; render(); status('notesRebased');
 });
 function writeMode(next) {
   abortRequest(); hidePopover(); proposal = null; mode = next;
@@ -127,19 +154,28 @@ function writeMode(next) {
   showChanges = false; render();
   if (next === 'write') $('draft').focus();
 }
-$('write-mode').addEventListener('click', () => writeMode('write'));
-$('pen-mode').addEventListener('click', () => writeMode('pen'));
-$('edit-draft').addEventListener('click', () => writeMode('write'));
+$('write-mode').addEventListener('click', () => { editing = true; writeMode('write'); });
+$('pen-mode').addEventListener('click', () => { editing = false; writeMode('pen'); });
+$('edit-draft').addEventListener('click', () => { editing = true; writeMode('write'); });
 $('show-changes').addEventListener('click', () => { showChanges = !showChanges; render(); });
 $('close-popover').addEventListener('click', hidePopover);
 $('intent-form').addEventListener('submit', event => {
   event.preventDefault(); if (!focus) return;
-  $('goal').value = $('intent-input').value.trim(); noteReady = true; hidePopover(); render(); $('goal').focus();
+  try {
+    if (activeNote()?.start === null) {
+      notes = notes.map(n => n.id === activeId ? { ...n, ...focus, quote: text.slice(focus.start, focus.end), needsReview: false } : n);
+      if ($('intent-input').value.trim()) notes = addGoal(notes, activeId, $('intent-input').value);
+    } else notes = addNote(notes, text, focus.start, focus.end, $('intent-input').value);
+    reconnectId = null;
+    activeId = notes.find(n => n.start === focus.start && n.end === focus.end).id;
+    $('goal').value = ''; noteReady = true; editing = false; hidePopover(); render(); status('noteSaved');
+    $('preview').focus();
+  } catch (error) { report(error); }
 });
 document.querySelectorAll('[data-goal]').forEach(button => button.addEventListener('click', () => {
   $('intent-input').value = t(`${button.dataset.goal}Goal`); $('intent-input').focus();
 }));
-$('clear-note').addEventListener('click', () => { abortRequest(); hidePopover(); focus = null; proposal = null; lastAccepted = null; render(); });
+$('clear-note').addEventListener('click', () => { if (activeId) removeNote(activeId); else { focus = null; noteReady = false; render(); } });
 $('goal').addEventListener('input', () => { if (controller) { abortRequest(); status('cancelled'); } });
 
 function nearestChar(x, y) {
@@ -164,16 +200,49 @@ $('document-view').addEventListener('pointermove', event => {
   if (hit) { drawing.lastStart = +hit.dataset.start; drawing.lastEnd = +hit.dataset.end; }
 });
 $('document-view').addEventListener('pointerup', event => {
+  if (mode !== 'pen') { setTimeout(captureMarkedSelection, 0); return; }
   if (!drawing || event.pointerId !== drawing.id) return;
   const start = Math.min(drawing.start, drawing.lastStart), end = Math.max(drawing.end, drawing.lastEnd);
   const hit = nearestChar(event.clientX, event.clientY); drawing = null;
   if (hit) mark(start, end, hit.getBoundingClientRect());
 });
 $('document-view').addEventListener('pointercancel', () => { drawing = null; });
+function captureMarkedSelection() {
+  if (proposal || lastAccepted && showChanges) return;
+  const selection = window.getSelection(); if (!selection?.rangeCount || selection.isCollapsed) return;
+  const range = selection.getRangeAt(0), view = $('document-view');
+  if (!view.contains(range.startContainer) || !view.contains(range.endContainer)) return;
+  const a = range.cloneRange(), b = range.cloneRange(); a.selectNodeContents(view); b.selectNodeContents(view);
+  a.setEnd(range.startContainer, range.startOffset); b.setEnd(range.endContainer, range.endOffset);
+  const rect = [...range.getClientRects()].find(r => r.width > 0);
+  mark(a.toString().length, b.toString().length, rect); selection.removeAllRanges();
+}
+$('document-view').addEventListener('keyup', event => { if (event.key === 'Shift') captureMarkedSelection(); });
+function selectNote(note) {
+  abortRequest(); hidePopover(); proposal = null; lastAccepted = null; activeId = note.id; editing = false;
+  focus = note.start === null ? null : { start: note.start, end: note.end }; noteReady = !!focus;
+  reconnectId = focus ? null : note.id;
+  $('goal').value = ''; render(); if (!focus) status('detached');
+}
+function removeNote(id) {
+  abortRequest(); proposal = null; notes = notes.filter(n => n.id !== id);
+  if (reconnectId === id) reconnectId = null;
+  if (activeId === id) { activeId = null; focus = null; noteReady = false; lastAccepted = null; }
+  render();
+}
+function removeRequirement(id, index) {
+  abortRequest(); proposal = null; notes = notes.map(n => n.id === id ? { ...n, goals: n.goals.filter((_, i) => i !== index), accepted: false } : n); render();
+}
+function saveRequirement() {
+  if (!activeId || !$('goal').value.trim()) return;
+  notes = addGoal(notes, activeId, $('goal').value); $('goal').value = ''; render(); status('noteSaved');
+}
+$('add-requirement').addEventListener('click', () => { try { saveRequirement(); } catch (error) { report(error); } });
 
 $('revision-form').addEventListener('submit', async event => {
   event.preventDefault(); clearError(); hidePopover(); if (!focus) { status('selectFirst'); return; }
-  const goal = $('goal').value.trim(); if (!goal) { $('goal').focus(); return; }
+  try { saveRequirement(); } catch (error) { report(error); return; }
+  const goal = activeNote()?.goals.join('\n') || ''; if (!goal) { $('goal').focus(); return; }
   if (!key && !example) { $('connection').showModal(); $('canvas-key').focus(); return; }
   abortRequest(); const id = generation, before = text, selected = { ...focus }, source = key ? 'live' : 'example';
   const scope = sentenceScope(text, focus.start, focus.end);
@@ -181,15 +250,18 @@ $('revision-form').addEventListener('submit', async event => {
   try {
     let result;
     if (!key) {
-      if (text !== EXAMPLE || text.slice(focus.start, focus.end) !== 'send' || !/soft|promise|commit|尽量|承诺|委婉/i.test(goal)) throw new Error(t('exampleOnly'));
+      if (text !== EXAMPLE || text.slice(focus.start, focus.end) !== 'send' || !/soft|promise|commit|尽量|承诺|委婉/i.test(goal)
+        || notesInScope(notes, scope).reduce((sum, n) => sum + n.goals.length, 0) !== 1) throw new Error(t('exampleOnly'));
       result = { replacement: scope.text.replace("I'll send", "I'll try to send"), reason: t('exampleReason') };
     } else {
       controller = new AbortController();
-      const request = revisionRequest(text, focus, goal, $('use-habits').checked ? habits : [], language === 'zh' ? 'Chinese' : 'English', model);
+      const request = revisionRequest(text, focus, goal, $('use-habits').checked ? habits : [], language === 'zh' ? 'Chinese' : 'English', model, notes);
       result = parseRevision(await requestCompletion(request.body, { apiKey: key, signal: controller.signal }), before, scope);
     }
     if (id !== generation || text !== before) return;
-    proposal = { ...result, before, scope, focus: selected, focusText: before.slice(selected.start, selected.end), goal, source };
+    const included = notesInScope(notes, scope);
+    proposal = { ...result, before, scope, focus: selected, focusText: before.slice(selected.start, selected.end), goal, source,
+      noteIds: included.map(n => n.id), beforeNotes: structuredClone(notes), focuses: included.map(n => ({ start: n.start - scope.start, end: n.end - scope.start })) };
     lastAccepted = null; mode = 'write'; showChanges = true; render();
     status(result.replacement === scope.text ? 'noChange' : 'previewReady');
     $('accept').focus();
@@ -207,7 +279,8 @@ $('accept').addEventListener('click', () => {
   if (!proposal) return;
   try {
     const next = applyRevision(text, proposal.scope, proposal.replacement);
-    undo = { text, lastAccepted, focus, example }; text = next;
+    undo = { text, lastAccepted, focus, example, notes: structuredClone(notes), activeId }; text = next;
+    notes = rebaseNotes(notes, proposal.scope, proposal.replacement, proposal.before).map(n => proposal.noteIds.includes(n.id) ? { ...n, accepted: true } : n);
     lastAccepted = { ...proposal }; proposal = null; focus = null; showChanges = true; render(); status('accepted');
     $('edit-draft').focus();
   } catch (error) { report(error); }
@@ -215,14 +288,14 @@ $('accept').addEventListener('click', () => {
 $('dismiss').addEventListener('click', () => { proposal = null; render(); status('dismissed'); $('goal').focus(); });
 $('undo').addEventListener('click', () => {
   if (!undo) return; abortRequest(); hidePopover();
-  ({ text, lastAccepted, focus, example } = undo); undo = null; proposal = null; showChanges = true; render(); status('undone');
+  ({ text, lastAccepted, focus, example, notes, activeId } = undo); undo = null; proposal = null; showChanges = true; render(); status('undone');
 });
 $('copy').addEventListener('click', async () => {
   try { await navigator.clipboard.writeText(text); status('copied'); } catch { status('copyError'); }
 });
 $('example').addEventListener('click', () => {
   if (text.trim() && text !== EXAMPLE && !confirm(t('confirmExample'))) return;
-  abortRequest(); hidePopover(); text = EXAMPLE; example = true; focus = null; proposal = null; lastAccepted = null; undo = null; mode = 'write';
+  abortRequest(); hidePopover(); text = EXAMPLE; example = true; focus = null; proposal = null; lastAccepted = null; undo = null; mode = 'write'; notes = []; activeId = null; reconnectId = null; editing = true;
   render(); clearError(); status('exampleStatus'); $('draft').focus();
 });
 $('ui-language').addEventListener('change', () => {
@@ -234,7 +307,21 @@ $('connection-form').addEventListener('submit', event => {
   event.preventDefault(); abortRequest(); key = $('canvas-key').value.trim(); model = $('canvas-model').value.trim();
   $('canvas-key').value = ''; $('connection').close(); render(); status('connectionSaved');
 });
-$('disconnect').addEventListener('click', () => { abortRequest(); key = ''; $('canvas-key').value = ''; $('connection').close(); render(); status('keyCleared'); });
+$('disconnect').addEventListener('click', () => { abortRequest(); connectionCheck?.abort(); verifiedKey = ''; key = ''; $('canvas-key').value = ''; $('connection').close(); render(); status('keyCleared'); });
+$('check-connection').addEventListener('click', async () => {
+  connectionCheck?.abort(); const current = new AbortController(); connectionCheck = current;
+  const candidate = $('canvas-key').value.trim() || key;
+  $('check-connection').disabled = true; $('connection-status').textContent = t('checking');
+  try {
+    await checkConnection(candidate, { signal: current.signal });
+    if (current !== connectionCheck || current.signal.aborted) return;
+    verifiedKey = candidate; $('connection-status').textContent = t('verified'); render();
+  } catch (error) { if (current === connectionCheck && !current.signal.aborted) $('connection-status').textContent = error.message; }
+  finally { if (current === connectionCheck) { connectionCheck = null; $('check-connection').disabled = false; } }
+});
+$('canvas-key').addEventListener('input', () => {
+  connectionCheck?.abort(); connectionCheck = null; $('check-connection').disabled = false; $('connection-status').textContent = '';
+});
 document.querySelectorAll('[data-close]').forEach(button => button.addEventListener('click', () => $(button.dataset.close).close()));
 
 function renderHabits() {
@@ -265,7 +352,7 @@ document.addEventListener('pointerdown', event => {
 window.addEventListener('resize', () => { resizeDraft(); positionPopover(); });
 window.addEventListener('scroll', positionPopover, true);
 window.visualViewport?.addEventListener('resize', positionPopover);
-window.addEventListener('pagehide', () => { abortRequest(); key = ''; $('canvas-key').value = ''; });
+window.addEventListener('pagehide', () => { abortRequest(); connectionCheck?.abort(); verifiedKey = ''; key = ''; $('canvas-key').value = ''; });
 document.addEventListener('keydown', event => {
   if (event.key === 'Escape') hidePopover();
   if (event.key === 'Tab' && !event.shiftKey && event.target === $('draft') && $('intent-popover').matches(':popover-open')) {
