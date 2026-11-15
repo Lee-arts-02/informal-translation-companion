@@ -2,6 +2,14 @@
 
 ## Writing Canvas
 
+Open `canvas.html` for the two-panel translator. Enter text and choose the language, recipient, channel and tone on the left; compare translations and read cultural notes on the right. Editing the input clears the previous preview.
+
+Highlight part of the translation to open its revision menu. Type replacement wording directly or request a suggestion with OpenRouter. Applying a replacement changes only the selection, and each expression version keeps its own edits and undo history. Continue in Writing Canvas when you want to revise the text as a draft.
+
+In **Style Memory**, add or remove categorized preferences and reset your rules when you want to start over. The wording comparison is a static illustration. Existing uncategorized preferences appear under General.
+
+Translation requests send only the translation input, chosen context and explicitly enabled canvas preferences, not the writing canvas draft. Supplied preferences are listed without claiming causal influence. **Use as draft** requires confirmation when replacing existing text and supports the canvas Undo action. There is no automatic preference learning or numerical confidence score.
+
 Open `canvas.html` (also linked as **Writing canvas** from the home page) for document-first revision. English is the default interface; Chinese is available through the interface picker. Write or paste a draft, select or underline a phrase, and add a short revision goal. The preview shows the enclosing sentence directly in the document, with deleted and added text and a separate highlight for supporting changes outside the selection. Changes are never applied until accepted. Accepted changes remain visible; **Keep writing**, **Show/Hide changes**, **Undo**, and copying clean text are available.
 
 **Try an example** is explicitly authored and needs no key. Personal previews use your OpenRouter key, kept only in the tab; text is sent only on request. Saving a writing preference is a separate, explicit browser-local action, with review, removal and an option to exclude preferences from a preview. Existing translation, language-check, and detailed habit tools remain available from the canvas footer. Canvas preferences are independent of the older tool's context-scoped habits.

@@ -37,6 +37,7 @@ async function note(page, goal) {
     await page.goto(`http://127.0.0.1:${server.address().port}/canvas.html`);
     await page.waitForLoadState('networkidle');
     assert.equal(await page.locator('html').getAttribute('lang'), 'en');
+    await page.locator('#writing-tools > summary').click();
     await page.locator('#example').click();
     const original = await page.locator('#draft').inputValue();
     await select(page, 5, 9);
@@ -60,7 +61,7 @@ async function note(page, goal) {
     assert.equal(await page.locator('#habit-list li').count(),1);
     await page.locator('#habit-input').fill('Keep uncertainty when describing plans.');
     await page.locator('#habit-form button').click();
-    assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('nuancebridge.canvas.habits'))[0]),'Keep uncertainty when describing plans.');
+    assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('nuancebridge.canvas.habits'))[0]),{rule:'Keep uncertainty when describing plans.',category:'general'});
     await page.locator('#undo').click(); assert.equal(await page.locator('#draft').inputValue(),original);
     await page.locator('#connect').click();
     await page.locator('#canvas-key').fill('test-session-key');
@@ -78,7 +79,7 @@ async function note(page, goal) {
     await page.locator('#connect').click(); await page.locator('#disconnect').click();
     assert.equal(await page.locator('#source-label').innerText(),'Live AI preview');
     await page.locator('#ui-language').selectOption('zh');
-    assert.equal(await page.locator('h1').innerText(),'让表达更像你。');
+    assert.equal(await page.locator('h1').innerText(),'NuanceBridge 翻译');
     await page.locator('#ui-language').selectOption('en');
     const stored = await page.evaluate(()=>JSON.stringify({...localStorage}));
     assert(!stored.includes('test-session-key') && !stored.includes("I'll send") && !stored.includes('I hope to send'));

@@ -1,3 +1,5 @@
+import { setupOutputRevision, setupContextButtons } from './output-revision.js';
+import { setupTranslation } from './canvas-translation.js';
 import { requestCompletion } from './translation.js';
 import { sentenceScope, wordDiff, applyRevision, revisionRequest, parseRevision } from './canvas-state.js';
 import { selectionRect, placeToolbar } from './selection-position.js';
@@ -8,15 +10,23 @@ const EXAMPLE = "I'll send you the draft on Friday. If I'm delayed, I'll let you
 let storage;
 try { storage = localStorage; } catch { storage = null; }
 let language = 'en', habits = [];
+const categories = {humor:'categoryHumor', slang:'categorySlang', tone:'categoryTone', culture:'categoryCulture', format:'categoryFormat', general:'categoryGeneral'};
+const habitRules = () => habits.map(({rule}) => rule);
 try {
   language = storage?.getItem('nuancebridge.canvas.language') === 'zh' ? 'zh' : 'en';
   const saved = JSON.parse(storage?.getItem('nuancebridge.canvas.habits') || '[]');
-  habits = Array.isArray(saved) ? saved.filter(x => typeof x === 'string' && x.trim() && x.length <= 400).slice(0, 12) : [];
+  habits = Array.isArray(saved) ? saved.map(value => {
+    const rule = typeof value === 'string' ? value : value?.rule;
+    const category = Object.hasOwn(categories, value?.category) ? value.category : 'general';
+    return {rule, category};
+  }).filter(({rule}) => typeof rule === 'string' && rule.trim() && rule.length <= 400).slice(0, 12) : [];
 } catch { /* Use memory-only defaults when browser storage is unavailable. */ }
 let text = '', focus = null, proposal = null, lastAccepted = null, undo = null;
 let mode = 'write', showChanges = true, example = false, key = '', model = 'openrouter/auto';
 let controller = null, generation = 0, drawing = null, anchor = null;
 let noteReady = false;
+let translationTools, outputRevision;
+const updateContextButtons = setupContextButtons();
 const t = name => copy[language][name] || copy.en[name] || name;
 const status = name => { $('status').textContent = t(name); };
 const el = (tag, content, className) => {
@@ -27,11 +37,16 @@ const el = (tag, content, className) => {
 function localize() {
   document.documentElement.lang = language;
   $('ui-language').value = language;
+  $('translation-source').placeholder = t('sourcePlaceholder');
+  $('translation-output').ariaLabel = t('selectOutput');
+  $('close-output-popover').ariaLabel = t('close');
   document.querySelectorAll('[data-i18n]').forEach(node => { node.textContent = t(node.dataset.i18n); });
   for (const [id, name] of [['draft','placeholder'], ['goal','goalPlaceholder'], ['intent-input','intentPlaceholder']]) $(id).placeholder = t(name);
   $('close-popover').ariaLabel = t('close'); $('clear-note').ariaLabel = t('dismissNote');
-  document.querySelectorAll('[data-close]').forEach(node => { node.ariaLabel = t('close'); });
-  renderHabits(); render(); $('status').textContent = ''; $('error').hidden = true;
+  document.querySelectorAll('[data-close].icon-button').forEach(node => { node.ariaLabel = t('close'); });
+  $('habit-input').placeholder = t('habitPlaceholder');
+  $('skip-input').textContent = t($('memory-panel').hidden ? 'skipInput' : 'skipMemory');
+  translationTools?.render(); updateContextButtons(); renderHabits(); render(); $('status').textContent = ''; $('error').hidden = true;
 }
 function hidePopover() { if ($('intent-popover').matches(':popover-open')) $('intent-popover').hidePopover(); }
 function clearError() { $('error').hidden = true; $('error').textContent = ''; }
@@ -185,7 +200,7 @@ $('revision-form').addEventListener('submit', async event => {
       result = { replacement: scope.text.replace("I'll send", "I'll try to send"), reason: t('exampleReason') };
     } else {
       controller = new AbortController();
-      const request = revisionRequest(text, focus, goal, $('use-habits').checked ? habits : [], language === 'zh' ? 'Chinese' : 'English', model);
+      const request = revisionRequest(text, focus, goal, $('use-habits').checked ? habitRules() : [], language === 'zh' ? 'Chinese' : 'English', model);
       result = parseRevision(await requestCompletion(request.body, { apiKey: key, signal: controller.signal }), before, scope);
     }
     if (id !== generation || text !== before) return;
@@ -231,33 +246,78 @@ $('ui-language').addEventListener('change', () => {
 });
 $('connect').addEventListener('click', () => { hidePopover(); $('connection').showModal(); $('canvas-key').focus(); });
 $('connection-form').addEventListener('submit', event => {
-  event.preventDefault(); abortRequest(); key = $('canvas-key').value.trim(); model = $('canvas-model').value.trim();
+  event.preventDefault(); translationTools.cancel(); abortRequest(); key = $('canvas-key').value.trim(); model = $('canvas-model').value.trim();
   $('canvas-key').value = ''; $('connection').close(); render(); status('connectionSaved');
 });
-$('disconnect').addEventListener('click', () => { abortRequest(); key = ''; $('canvas-key').value = ''; $('connection').close(); render(); status('keyCleared'); });
+$('disconnect').addEventListener('click', () => { translationTools.cancel(); outputRevision.close(); abortRequest(); key = ''; $('canvas-key').value = ''; $('connection').close(); render(); status('keyCleared'); });
 document.querySelectorAll('[data-close]').forEach(button => button.addEventListener('click', () => $(button.dataset.close).close()));
 
 function renderHabits() {
-  $('habit-list').replaceChildren();
-  if (!habits.length) $('habit-list').append(el('li', t('emptyHabits')));
-  habits.forEach((habit, index) => {
-    const item = el('li'), remove = el('button', t('remove')); remove.type = 'button';
-    remove.addEventListener('click', () => { habits.splice(index, 1); persistHabits(); renderHabits(); });
-    item.append(el('span', habit), remove); $('habit-list').append(item);
+  const list = $('habit-list');
+  list.replaceChildren();
+  $('reset-habits').disabled = !habits.length;
+  if (!habits.length) list.append(el('li', t('emptyMemory'), 'memory-card'));
+  habits.forEach(({rule, category}, index) => {
+    const item = el('li', undefined, 'memory-card');
+    const remove = el('button', t('remove')); remove.type = 'button';
+    remove.setAttribute('aria-label', `${t('remove')}: ${rule}`);
+    remove.addEventListener('click', () => {
+      habits.splice(index, 1); persistHabits('habitRemoved'); renderHabits(); $('habits-open').focus();
+    });
+    item.append(el('span', t(categories[category]), 'memory-badge'), el('p', rule), remove);
+    list.append(item);
   });
 }
-function persistHabits() {
-  try { if (!storage) throw new Error(); storage.setItem('nuancebridge.canvas.habits', JSON.stringify(habits)); status('saved'); }
-  catch { status('storageError'); }
+function persistHabits(success) {
+  translationTools.invalidate();
+  abortRequest();
+  let message = success;
+  try { if (!storage) throw new Error(); storage.setItem('nuancebridge.canvas.habits', JSON.stringify(habits)); }
+  catch { message = 'storageError'; }
+  $('memory-status').textContent = t(message);
+  status(message);
 }
-$('habits-open').addEventListener('click', () => { hidePopover(); $('habit-input').value = ''; renderHabits(); $('habits-dialog').showModal(); });
-$('remember').addEventListener('click', () => {
-  $('habit-input').value = lastAccepted?.goal || ''; renderHabits(); $('habits-dialog').showModal(); $('habit-input').focus(); status('rememberHelp');
-});
+function openHabitDialog(rule = '', category = 'humor') {
+  hidePopover();
+  $('habit-input').value = rule;
+  $('habit-category').value = category;
+  $('habit-form-status').textContent = '';
+  $('habits-dialog').showModal();
+  (rule ? $('habit-input') : $('habit-category')).focus();
+}
+$('habits-open').addEventListener('click', () => openHabitDialog());
+$('remember').addEventListener('click', () => openHabitDialog(lastAccepted?.goal || '', 'general'));
 $('habit-form').addEventListener('submit', event => {
-  event.preventDefault(); const value = $('habit-input').value.trim(); if (!value) return;
-  if (habits.length >= 12) { status('limit'); return; }
-  if (!habits.includes(value)) habits.push(value); persistHabits(); renderHabits(); $('habits-dialog').close(); $('remember').focus();
+  event.preventDefault();
+  const rule = $('habit-input').value.trim(), category = $('habit-category').value;
+  if (!rule || !Object.hasOwn(categories, category)) return;
+  if (habits.some(item => item.rule === rule && item.category === category)) {
+    $('habit-form-status').textContent = t('duplicateHabit'); return;
+  }
+  if (habits.length >= 12) { $('habit-form-status').textContent = t('limit'); return; }
+  habits.push({rule, category}); persistHabits('saved'); renderHabits(); $('habits-dialog').close();
+});
+$('reset-habits').addEventListener('click', () => {
+  if (!habits.length || !confirm(t('confirmResetHabits'))) return;
+  habits = []; persistHabits('habitsReset'); renderHabits(); $('habits-open').focus();
+});
+const workspaceTabs = [$('translator-tab'), $('memory-tab')];
+function showWorkspace(index) {
+  if (index === 1) { hidePopover(); outputRevision?.close(); }
+  $('translator-panel').hidden = index !== 0; $('memory-panel').hidden = index !== 1;
+  $('skip-input').href = index === 0 ? '#translation-source' : '#habits-open';
+  $('skip-input').textContent = t(index === 0 ? 'skipInput' : 'skipMemory');
+  workspaceTabs.forEach((tab, i) => {
+    tab.setAttribute('aria-selected', String(index === i)); tab.tabIndex = index === i ? 0 : -1;
+  });
+}
+workspaceTabs.forEach((tab, index) => {
+  tab.addEventListener('click', () => showWorkspace(index));
+  tab.addEventListener('keydown', event => {
+    const target = {ArrowLeft:1-index, ArrowRight:1-index, Home:0, End:1}[event.key];
+    if (target === undefined) return;
+    event.preventDefault(); showWorkspace(target); workspaceTabs[target].focus();
+  });
 });
 document.addEventListener('pointerdown', event => {
   if (!$('intent-popover').contains(event.target) && event.target !== $('draft') && !$('document-view').contains(event.target)) hidePopover();
@@ -265,11 +325,29 @@ document.addEventListener('pointerdown', event => {
 window.addEventListener('resize', () => { resizeDraft(); positionPopover(); });
 window.addEventListener('scroll', positionPopover, true);
 window.visualViewport?.addEventListener('resize', positionPopover);
-window.addEventListener('pagehide', () => { abortRequest(); key = ''; $('canvas-key').value = ''; });
+window.addEventListener('pagehide', () => { outputRevision.close(); translationTools.cancel(); abortRequest(); key = ''; $('canvas-key').value = ''; });
 document.addEventListener('keydown', event => {
   if (event.key === 'Escape') hidePopover();
   if (event.key === 'Tab' && !event.shiftKey && event.target === $('draft') && $('intent-popover').matches(':popover-open')) {
     event.preventDefault(); $('intent-input').focus();
   }
 });
+translationTools = setupTranslation({ t, onOutputChange: () => outputRevision?.close(),
+  connection: () => ({ apiKey:key, model }), preferences: habitRules,
+  connect: () => { hidePopover(); $('connection').showModal(); $('canvas-key').focus(); },
+  adopt: value => {
+    if (text.trim() && !confirm(t('replaceDraftTranslation'))) return false;
+    abortRequest(); hidePopover(); clearError();
+    undo = { text, lastAccepted, focus, example };
+    text = value; focus = null; proposal = null; lastAccepted = null; example = false; mode = 'write';
+    $('writing-tools').open = true; render(); $('draft').focus(); status('translationUsed'); return true;
+  },
+});
+outputRevision = setupOutputRevision({t,
+  connection: () => ({apiKey:key, model}),
+  connect: () => { $('connection').showModal(); $('canvas-key').focus(); },
+  replace: (...args) => translationTools.replace(...args),
+});
+$('writing-tools').addEventListener('toggle', () => { if ($('writing-tools').open) resizeDraft(); });
+
 localize();
