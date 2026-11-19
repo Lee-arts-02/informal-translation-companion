@@ -97,3 +97,21 @@
 #habit-form .note-actions{justify-content:flex-end;margin-top:12px}
 #habit-form .primary{margin:0}
 @media(max-width:600px){.memory-grid{grid-template-columns:minmax(0,1fr)}}
+
+.preference-chips{display:flex;gap:7px;flex-wrap:wrap;margin:12px 0}
+.preference-chips button{border:1px solid #dfbc7e;border-radius:40px;background:#fff0c9;color:#693815;font-size:13px}
+#habits-dialog .tool-help{color:var(--canvas-muted);margin-top:10px}
+.voice-controls{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:12px 0}
+.voice-controls button{background:#ffedc6}
+.voice-controls label{font-size:12px}
+.voice-controls select{max-width:100%}
+#voice-status{font-size:13px;color:var(--canvas-muted);line-height:1.5}
+#voice-status:empty{display:none}
+#voice-input[aria-pressed=true]{background:#a94a16;color:#fff}
+.channel-buttons .context-options{grid-template-columns:repeat(3,minmax(0,1fr))}
+
+.listen-tools{display:flex;align-items:center;gap:9px;margin-top:8px}
+.speaker-button{min-width:42px;min-height:42px;font-size:19px!important;background:#ffedc6}
+.speaker-button[aria-pressed=true]{background:#ffdc8c;border-color:#a94a16}
+.listen-tools p,#listen-output-status{font-size:12px;color:var(--canvas-muted)}
+.listen-tools p:empty,#listen-output-status:empty{display:none}

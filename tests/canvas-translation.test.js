@@ -19,8 +19,9 @@ test('canvas translation previews are explicit, context-bound, cancellable and u
   let key = '', adopted = [], prompts = 0, request;
   try {
     const tools = setupTranslation({t:x=>x, connection:()=>({apiKey:key,model:'test/model'}),
-      preferences:()=>['Keep uncertainty.'], connect:()=>prompts++, adopt:value=>{adopted.push(value);return true;}});
+      preferences:()=>['Keep uncertainty.'], connect:()=>prompts++});
     $('translation-source').value = 'This project is excellent.';
+    $('translation-channel').value = 'Reddit'; $('translation-tone').value = 'Emoji / Meme';
     await $('canvas-translation-form').fire('submit'); assert.equal(prompts,1);
     key = 'fixture-key';
     globalThis.fetch = async (_, options) => {
@@ -32,6 +33,8 @@ test('canvas translation previews are explicit, context-bound, cancellable and u
     };
     await $('canvas-translation-form').fire('submit');
     assert.deepEqual(JSON.parse(request.messages[1].content).preferences,['Keep uncertainty.']);
+    assert.equal(JSON.parse(request.messages[1].content).channel,'Reddit');
+    assert.equal(JSON.parse(request.messages[1].content).tone,'Emoji / Meme');
     assert.equal($('translation-result').hidden, false); assert.equal(adopted.length,0);
     await $('translation-versions').children[1].fire('click');
     assert.equal($('translation-output').value,'You made this project shine!');
@@ -45,9 +48,9 @@ test('canvas translation previews are explicit, context-bound, cancellable and u
     assert.equal($('translation-output').value, 'You made that project shine!');
     $('translation-output').focus = () => {};
     await $('undo-output').fire('click'); assert.equal($('translation-output').value, before);
-    await $('translation-apply').fire('click'); assert.deepEqual(adopted,[before]);
+
     await $('translation-tone').fire('input'); assert.equal($('translation-result').hidden,true);
-    await $('translation-apply').fire('click'); assert.equal(adopted.length,1);
+
     $('translation-use-habits').checked = false;
     await $('canvas-translation-form').fire('submit');
     assert.deepEqual(JSON.parse(request.messages[1].content).preferences,[]);

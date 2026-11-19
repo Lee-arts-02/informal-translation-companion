@@ -1,7 +1,7 @@
 import { translate } from './translation.js';
 
 // Translation previews never mutate the writing canvas until explicit adoption.
-export function setupTranslation({ t, connection, preferences, connect, adopt, onOutputChange = () => {} }) {
+export function setupTranslation({ t, connection, preferences, connect, onOutputChange = () => {} }) {
   const $ = id => document.getElementById(id);
   let result = null, version = 'translation', supplied = [], controller = null, generation = 0;
   const edits = new Map();
@@ -57,12 +57,6 @@ export function setupTranslation({ t, connection, preferences, connect, adopt, o
     finally { if (id === generation) { controller = null; $('translation-submit').disabled = false; $('translation-cancel').hidden = true; } }
   });
   $('translation-cancel').addEventListener('click', () => { cancel(); message('cancelled'); });
-  $('translation-apply').addEventListener('click', () => {
-    if (!result) return;
-    const value = current();
-    if (value.length > 6000) { message('translationTooLong'); return; }
-    if (adopt(value)) message('translationUsed');
-  });
   $('clear-source').addEventListener('click', () => {
     $('translation-source').value = ''; invalidate(); $('translation-source').focus();
   });

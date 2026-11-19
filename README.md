@@ -4,9 +4,11 @@
 
 Open `canvas.html` for the two-panel translator. Enter text and choose the language, recipient, channel and tone on the left; compare translations and read cultural notes on the right. Editing the input clears the previous preview.
 
-Highlight part of the translation to open its revision menu. Type replacement wording directly or request a suggestion with OpenRouter. Applying a replacement changes only the selection, and each expression version keeps its own edits and undo history. Continue in Writing Canvas when you want to revise the text as a draft.
+Highlight part of the translation to open its revision menu. Type replacement wording directly or request a suggestion with OpenRouter. Applying a replacement changes only the selection, and each expression version keeps its own edits and undo history. The former Writing Canvas section has been removed from this page.
 
-In **Style Memory**, add or remove categorized preferences and reset your rules when you want to start over. The wording comparison is a static illustration. Existing uncategorized preferences appear under General.
+Use **Speak your thought** for browser-supported dictation. Select the speaking language first, stop when finished, and review the transcript before translating. Audio may be processed by the browser provider; this app does not record or store audio. Unsupported browsers retain typed input. LinkedIn, Instagram and Reddit are available as channels, and Emoji / Meme is available as a tone.
+
+In **Style Memory**, use example rule chips (such as emmm, lol and cool) as editable starters. Add or remove categorized preferences and reset your rules when you want to start over. The wording comparison is a static illustration. Existing uncategorized preferences appear under General.
 
 Translation requests send only the translation input, chosen context and explicitly enabled canvas preferences, not the writing canvas draft. Supplied preferences are listed without claiming causal influence. **Use as draft** requires confirmation when replacing existing text and supports the canvas Undo action. There is no automatic preference learning or numerical confidence score.
 
