@@ -1,5 +1,7 @@
 # NuanceBridge
 
+The root homepage now opens the Translator with voice input, read-aloud and Style Memory. `canvas.html` remains available; previous writing tools are preserved at `writing-tools.html`.
+
 ## Writing Canvas
 
 Open `canvas.html` for the two-panel translator. Enter text and choose the language, recipient, channel and tone on the left; compare translations and read cultural notes on the right. Editing the input clears the previous preview.

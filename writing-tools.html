@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Your words. Your choices. A multilingual writing companion for preserving meaning, personal voice, and cultural expression.">
+  <meta name="theme-color" content="#f5f4ef">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src https://openrouter.ai; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <title>NuanceBridge — Meaning, carried across.</title>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./writing.css">
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#writing-workspace">Skip to writing companion</a>
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="NuanceBridge home"><span class="brand-mark" aria-hidden="true">n<span>↗</span></span>NuanceBridge<span class="brand-dot">.</span></a>
+    <nav aria-label="Main navigation"><a href="./canvas.html">Translator &amp; writing canvas ↗</a><a href="#writing-workspace">Language tools</a><a href="#how-it-works">The idea</a><a href="https://github.com/Lee-arts-02/informal-translation-companion" target="_blank" rel="noopener noreferrer">View source ↗</a><button id="open-settings" class="button small outline">API settings <span aria-hidden="true">⚙</span></button></nav>
+  </header>
+  <main>
+
+    <section class="hero" aria-labelledby="hero-title"><h1 id="hero-title">Your words. <em>Your way.</em></h1></section>
+    <section id="writing-workspace" class="writing-workspace" aria-labelledby="writing-title">
+      <div class="writing-top"><div><h2 id="writing-title">Write across languages.</h2></div><div class="writing-modes" role="group" aria-label="Writing mode"><button id="writing-live-mode" class="active" aria-pressed="true">My own draft</button><button id="writing-demo-mode" aria-pressed="false">Try an example</button></div></div>
+
+
+
+
+
+      <div class="writing-main"><div class="draft-column">
+        <div class="writing-section-heading"><h3>1 · Your draft</h3><label>Write in<select id="writing-target"></select></label><span id="writing-badge" class="badge" hidden>YOUR DRAFT</span></div>
+      <details id="context-panel" class="context-panel"><summary>Optional: what should this convey? <span id="context-summary">Add a little context, if you like</span></summary><div class="writing-context">
+        <label>What do you want to convey?<textarea id="writing-intent" rows="2" maxlength="600" placeholder="e.g. I’m happy to help, but can’t promise a date."></textarea></label>
+        <label>Anything to avoid?<textarea id="writing-avoid" rows="2" maxlength="600" placeholder="e.g. A stronger promise than I mean."></textarea></label>
+        <label>Who’s it for?<input id="writing-recipient" maxlength="150" placeholder="e.g. Friend, Professor"></label><label>Your relationship<input id="writing-relationship" maxlength="300" placeholder="e.g. We work on a project together."></label>
+        <label>Where will you use it?<select id="writing-channel"><option>Text message</option><option>Email</option><option>Social media</option><option>Personal writing</option><option>Creative writing</option><option>Community forum</option></select></label>
+        <label>How much help?<select id="writing-scope"><option value="light">Light edits</option><option value="grammar">Grammar only</option><option value="selection">Selected passage only</option><option value="explore">Explore alternatives</option></select></label>
+      </div><button id="flow-intention" class="text-button">Clarify my intentions</button>      <details id="intent-panel" hidden class="intent-panel"><summary>What matters in this draft <span id="intent-count">Add your own or let AI suggest</span></summary><p class="help">These instructions apply to this draft only. AI guesses stay out of writing requests until you confirm them. Saving a future habit is a separate choice.</p><div id="intent-list"></div><form id="intent-form" class="inline-form"><label class="grow">Add an intention<input id="new-intent" maxlength="400" placeholder="e.g. Keep the uncertainty" required></label><button class="button small outline" type="submit">Add</button></form><button id="extract-intents" class="text-button">Help me clarify my intentions</button><button id="back-from-intentions" class="button small outline">Back to writing</button></details></details>
+        <div class="draft-editor-area"><section id="selection-workbench" class="selection-workbench" popover="manual" aria-labelledby="selection-title">
+          <div class="selection-heading"><span class="selection-step" aria-hidden="true">1</span><h4 id="selection-title">Passage actions</h4></div>
+          <div class="selection-preview"><span id="selection-caption" class="field-label">Start here</span><blockquote id="selected-passage" dir="auto">Select a word or sentence in your draft below.</blockquote></div>
+          <p id="selection-guidance" class="help">Highlight text below to get started.</p>
+          <div class="selection-heading"><span class="selection-step" aria-hidden="true">2</span><p>What would you like to do with it?</p></div>
+          <div class="selection-actions" role="group" aria-label="Selected text actions">
+            <div class="selection-action preserve-action"><span class="action-category">KEEP THE EXPRESSION</span><button id="protect-selection" type="button" aria-describedby="protect-outcome" disabled><span aria-hidden="true">◆</span> Keep exactly as written</button><p id="protect-outcome">Keep this wording in the final draft. AI edits will leave it untouched.</p><span class="action-example">e.g. “辛苦了” stays “辛苦了”</span></div>
+            <div class="selection-action express-action"><span class="action-category">EXPLORE THE WORDING</span><button id="express-selection" type="button" aria-describedby="expression-destination" disabled><span aria-hidden="true">↔</span> Suggest another expression</button><p id="expression-destination">Preview alternatives in your writing language. You choose whether to use one.</p><span class="action-example">e.g. “尽量” → “try to”</span></div>
+            <div class="selection-action instruction-action"><span class="action-category">GUIDE THE AI</span><button id="instruction-selection" type="button" aria-describedby="instruction-outcome" disabled><span aria-hidden="true">↗</span> Move to AI instructions</button><p id="instruction-outcome">After you confirm, remove this note from the draft and add it to your instructions.</p><span class="action-example">e.g. “不要太正式” tells AI how to help</span></div>
+          </div>
+        </section>
+        <label class="sr-only" for="writing-draft">Your working draft</label><textarea id="writing-draft" maxlength="6000" rows="10" dir="auto" placeholder="先写下你想说的。English, 中文, or a little of both…"></textarea></div>
+        <div class="draft-meta"><span id="writing-selection">Select words for a little extra help.</span><span id="writing-count" class="mono">0 / 6,000</span></div>
+        <p id="selection-feedback" class="selection-feedback" role="status" aria-live="polite"></p>
+
+        <div id="habit-conflicts" aria-live="polite"></div>
+        <div id="protected-phrases" class="protected-phrases" aria-label="Protected expressions"></div>
+
+
+
+      <div id="flow-guide" class="flow-guide" aria-label="Writing journey">
+
+        <div class="flow-next"><div><strong id="flow-next-title">Start with what you want to say.</strong><p id="flow-next-detail">You can use any language. Every step is optional and you can return whenever you like.</p></div><button id="flow-next-action" class="button primary">Start writing</button></div>
+
+
+      </div>
+
+
+
+        <p id="writing-status" class="writing-status" role="status" aria-live="polite"></p><p id="writing-error" class="error" role="alert" hidden></p>
+
+
+
+      </div><section class="suggestions-column" id="suggestions-panel" aria-label="Review this draft" aria-busy="false"><button id="close-companion" class="text-button">Hide review</button><p id="companion-error" class="error mobile-only" role="alert" hidden></p>
+
+        <section id="panel-suggestions" hidden><div class="writing-section-heading"><h3>2 · Review possible changes</h3><span id="suggestion-count" class="mono"></span></div><p id="suggestion-summary" class="suggestion-summary">Keep what fits. Leave what doesn’t.</p><div id="decision-result" class="decision-result" role="status" aria-live="polite" hidden></div><div id="writing-suggestions"></div><div id="session-feedback" class="session-feedback"></div></section>
+        <section id="panel-check" hidden>
+          <h3>3 · Does this still mean what you mean?</h3><p class="help">Read the other-language view, then tell us whether anything changed. This is your judgment, not an AI accuracy score.</p>
+          <div class="check-intent-reference"><strong>Your intended meaning</strong><p id="check-intent-reference"></p><button id="edit-check-intent" class="text-button">Edit my intended meaning</button></div><ol class="check-steps"><li><strong>1 · Read</strong><span>See this version in a familiar language.</span></li><li><strong>2 · Decide</strong><span>Mark a mismatch or say it fits.</span></li><li><strong>3 · Refine</strong><span>Preview a small fix, then check again.</span></li></ol>
+          <div class="back-translation-row"><label>Check in<select id="back-language"></select></label><button id="back-translate" class="button small primary">Create language check</button></div>
+          <p id="snapshot-status" role="status" class="help"></p>
+          <div id="check-output" hidden><p id="check-demo-hint" class="help" hidden></p><details id="check-draft-comparison"><summary>See the current writing alongside this check</summary><p id="check-current-draft" class="comparison-draft" dir="auto"></p></details>
+          <label for="check-text">Other-language view · select a part that feels off</label><textarea id="check-text" rows="5" readonly dir="auto" placeholder="Choose a language, then create a check. Your draft stays unchanged."></textarea><p id="flagged-text" class="help"></p>
+          <div class="check-decisions"><button id="mark-check-reviewed" class="button small outline" disabled>This matches what I mean</button><span id="check-reviewed-status" role="status" class="help"></span><button id="copy-checked-draft" class="button small primary" hidden>Copy my draft</button></div>
+          <fieldset class="mismatch-options"><legend>Something feels different?</legend><p class="help">Start with a prompt below, or describe it in your own words.</p><div id="mismatch-prompts"><button type="button" data-mismatch="The commitment is stronger than I intended.">Too much commitment</button><button type="button" data-mismatch="The tone does not match how I want to sound.">Tone feels different</button><button type="button" data-mismatch="A cultural expression or image was lost.">Lost an expression</button><button type="button" data-mismatch="An important detail is missing or changed.">A detail changed</button></div></fieldset>
+          <label for="correction-note">What should this mean instead? · any language</label><textarea id="correction-note" rows="2" maxlength="600" placeholder="我说的是尽量，不是保证。Or: I want warmth without a stronger promise."></textarea><p id="repair-help" class="help">A fix is only a preview. Your wording changes after you accept it.</p><button id="repair-writing" class="button primary" aria-describedby="repair-help">Preview a focused fix</button></div><button id="return-to-writing" class="text-button">Back to editing my draft</button>
+          <details class="reader-check"><summary>Optional: compare intentions & possible reader impressions</summary><button id="check-meaning" class="text-button">Ask for another perspective</button><div id="reflection-result" aria-live="polite"></div></details>
+        </section>
+
+
+      </section></div>
+        <details id="writing-tools" class="writing-tools"><summary>More tools</summary><div class="tools-content">
+        <div class="goal-anchor"><span class="field-label">This draft’s goal</span><p id="goal-anchor-text">No goal added yet. You can write first.</p><button id="edit-draft-goal" class="text-button">Set or edit my goal</button></div>
+
+
+      <div class="language-settings"><label>Explain in<select id="explanation-language"><option>Chinese (Simplified)</option><option>English</option><option>Chinese (Traditional)</option><option>Spanish</option><option>French</option><option>Urdu</option><option>Hindi</option><option>Arabic</option></select></label><label class="check-label"><input id="allow-mix" type="checkbox" checked>Keep intentional language mixing</label></div>
+        <div class="writing-primary-actions"><button id="open-check" class="button small outline">Check in another language</button><button id="open-companion" class="text-button">View suggestions</button><button id="open-history" class="button small outline">Review changes</button><button id="analyze-writing" class="button primary">Help me refine this ↗</button><button id="starting-draft" class="button outline">Shape a full draft</button></div>
+        <div class="draft-secondary"><button id="writing-undo" class="text-button">Undo last change</button><button id="show-original" class="text-button">Compare with original</button><button id="new-writing-session" class="text-button">New draft</button></div>
+        <div id="original-panel" class="original-panel" hidden><h4>Your original draft</h4><p id="original-text" dir="auto"></p></div>
+        <details id="used-habits" class="used-habits"><summary>Habits for this writing moment <span id="habit-count"></span></summary><p class="help">Uncheck to skip a habit for this session. Your explicit instructions take priority. These are inputs supplied to AI, not proof of what caused an output.</p><div id="session-habits"></div><div id="last-habits"></div><button id="open-habits" class="text-button">Manage my expression habits</button></details>
+        <label class="check-label"><input id="use-writing-habits" type="checkbox" checked>Use saved habits and writing sample</label>
+        <details id="request-inputs"><summary>What will be provided to AI?</summary><p id="request-input-summary" class="help"></p><div id="confirmed-input-list"></div><p class="help">Only confirmed intention cards are used as instructions. Explicit context you enter also applies. A language check excludes the original, intentions and saved habits.</p><p id="request-input-status" class="help"></p></details>
+      <div id="connection-hint" class="connection-hint"><p id="connection-hint-text">Write freely. AI suggestions need your own API key; the guided example works without one.</p><div><button id="first-example" class="text-button">Try the free example</button><button id="connect-writing" class="text-button">Connect my AI</button></div></div>
+                <p class="writing-privacy">Drafts and decisions stay in this tab. Habits are saved only by your choice. Live requests send relevant text and context to your selected AI provider.</p>
+        <section id="panel-history" hidden><h3>This draft, step by step</h3><p class="help">Records show what happened. AI explanations are possibilities, not hidden reasoning.</p><div id="revision-events"></div><button id="export-events" class="text-button">Download my session record</button></section>
+        <p id="writing-session-info" class="help">Draft stays in this tab.</p>
+        </div></details>
+      <details id="memory-nudge" class="memory-nudge" hidden><summary>Remember this choice? · optional</summary><div><strong>Something to remember next time?</strong><p id="memory-nudge-text"></p></div><button id="remember-correction" class="button small outline">Review & save a habit</button><button id="dismiss-memory" class="text-button">Just this time</button></details>
+      <div class="writing-footer"><span class="help">4 · Use your draft when ready.</span><div><button id="writing-cancel" class="button outline" hidden>Cancel</button><button id="copy-draft" class="button small outline">Copy draft</button><details class="export-menu"><summary>More</summary><button id="download-draft" class="text-button">Download draft</button><button id="peer-review" class="text-button">Export for human feedback</button></details></div></div>
+    </section>
+    <details class="extra-section"><summary>More examples</summary>
+    <section class="writing-examples" aria-label="Guided writing examples"><div class="examples-heading"><div><p class="eyebrow">TRY A WRITING MOMENT</p><h2>Small words. Real choices.</h2></div><p>Authored examples. No API key needed.</p></div><div id="writing-examples"></div></section>
+
+    </details>
+    <details class="quick-translation" id="translation-tool"><summary>Need a quick translation? Open the original translator <span aria-hidden="true">↗</span></summary>
+    <section id="workspace" class="workspace" aria-label="Translation companion">
+      <div class="workspace-bar"><div class="mode-switch" role="group" aria-label="Translation mode"><button id="demo-mode" class="active" aria-pressed="true">Explore the demo</button><button id="live-mode" aria-pressed="false">Translate your own <span aria-hidden="true">↗</span></button></div><span id="mode-status" class="status"><span></span> No API key needed</span></div>
+      <div class="workspace-grid">
+        <div class="input-panel">
+          <div class="section-heading"><span class="step">01</span><h2>Start with your words</h2></div>
+          <div class="language-row">
+            <label>From<select id="source" aria-label="Source language">
+              <option>Auto-detect</option>
+              <option>English</option>
+              <option>Chinese (Simplified)</option>
+              <option>Chinese (Traditional)</option>
+              <option>Cantonese (Traditional)</option>
+              <option>Arabic</option><option>Bengali</option><option>Dutch</option>
+              <option>French</option><option>German</option><option>Greek</option>
+              <option>Hebrew</option><option>Hindi</option><option>Indonesian</option>
+              <option>Italian</option><option>Japanese</option><option>Korean</option>
+              <option>Malay</option><option>Persian</option><option>Polish</option>
+              <option>Portuguese</option><option>Russian</option><option>Spanish</option>
+              <option>Tamil</option><option>Thai</option><option>Turkish</option>
+              <option>Ukrainian</option><option>Urdu</option><option>Vietnamese</option>
+            </select></label>
+            <span class="language-arrow" aria-hidden="true">→</span>
+            <label>To<select id="target" aria-label="Target language">
+              <option>English</option>
+              <option>Chinese (Simplified)</option>
+              <option>Chinese (Traditional)</option>
+              <option>Cantonese (Traditional)</option>
+              <option>Arabic</option><option>Bengali</option><option>Dutch</option>
+              <option>French</option><option>German</option><option>Greek</option>
+              <option>Hebrew</option><option>Hindi</option><option>Indonesian</option>
+              <option>Italian</option><option>Japanese</option><option>Korean</option>
+              <option>Malay</option><option>Persian</option><option>Polish</option>
+              <option>Portuguese</option><option>Russian</option><option>Spanish</option>
+              <option>Tamil</option><option>Thai</option><option>Turkish</option>
+              <option>Ukrainian</option><option>Urdu</option><option>Vietnamese</option>
+            </select></label>
+          </div>
+          <label class="sr-only" for="source-text">Text to translate</label><textarea id="source-text" dir="auto" maxlength="6000" rows="5" placeholder="An expression, a message, a thought…"></textarea>
+          <div class="input-meta"><span id="input-hint">A curated example. Try another below.</span><span id="character-count" class="mono">0 / 6,000</span></div>
+          <div class="section-heading context-heading"><span class="step">02</span><h2>Add a little context</h2></div>
+          <div class="context-grid"><label>Who’s it for?<select id="recipient"><option>Friend</option><option>Supervisor</option><option>Support group</option><option>Client</option><option>Family</option><option>General audience</option></select></label><label>Where are you saying it?<select id="channel"><option>Text message</option><option>Email</option><option>Community forum</option><option>Social media</option><option>Conversation</option></select></label></div>
+          <label class="field-label" for="tone">How should it feel?</label><select id="tone"><option>Warm</option><option>Natural</option><option>Professional</option><option>Humorous</option><option>Empathetic</option><option>Direct</option></select>
+          <div class="profile-row"><label class="check-label"><input id="use-profile" type="checkbox" checked><span>Use my matching habits</span></label><button id="open-profile" class="text-button">Manage habits ↗</button></div>
+          <button id="translate" class="button primary">Explore this translation <span aria-hidden="true">↗</span></button><button id="cancel" class="button outline" hidden>Cancel translation</button>
+          <p id="request-status" class="request-status" role="status" aria-live="polite"></p>
+          <p id="error" class="error" role="alert" hidden></p>
+        </div>
+        <div class="output-panel" aria-busy="false" id="output-panel">
+          <div class="output-heading"><div class="section-heading"><span class="step">03</span><h2>Find your voice</h2></div><span id="result-badge" class="badge">CURATED DEMO</span></div>
+          <p class="output-label" id="output-label">A NATURAL WAY TO SAY IT</p><div id="translation" class="translation" dir="auto" aria-live="polite"></div>
+          <div class="output-actions"><span id="result-context"></span><button id="copy" class="button small outline">Copy text <span aria-hidden="true">⧉</span></button></div>
+          <div class="alternatives"><p class="field-label">Same meaning, another register</p><div id="registers" class="registers" role="group" aria-label="Translation register"><button data-register="translation" class="active" aria-pressed="true">Original</button><button data-register="casual" aria-pressed="false">Casual</button><button data-register="direct" aria-pressed="false">Direct</button><button data-register="formal" aria-pressed="false">Formal</button></div></div>
+          <div id="nuance-card" class="nuance-card"><span class="nuance-symbol" aria-hidden="true">✳</span><div><h3>Between the lines</h3><p id="nuance"></p></div></div>
+          <p id="result-note" class="result-note">An authored example, not a live AI response. No text is sent anywhere in demo mode.</p>
+        </div>
+      </div>
+    </section>
+    <section class="examples" aria-labelledby="examples-title"><div class="examples-heading"><div><p class="eyebrow">TAKE IT FOR A SPIN</p><h2 id="examples-title">Small phrases. Big differences.</h2></div><p>Three cultures. Three everyday moments.</p></div><div id="examples" class="example-grid"></div></section>
+    </details>
+    <details class="extra-section"><summary>About NuanceBridge</summary>
+    <section id="how-it-works" class="idea-section"><div><p class="eyebrow">THE IDEA BEHIND THE BRIDGE</p><h2>Clearer writing.<br><em>Still unmistakably you.</em></h2></div><div class="idea-copy"><p>Fluent writing should leave room for your intention, your cultural expressions, and your own way of speaking. NuanceBridge offers focused suggestions, explains their tradeoffs, and lets you accept, edit, or reject each one.</p><p>Protect the words that matter. Reflect on possible reader interpretations. Check meaning across languages. Save only the habits you choose. Your decisions guide the next round within this writing session; saving a longer-term preference is always your choice.</p><a href="https://github.com/Lee-arts-02/informal-translation-companion#readme" target="_blank" rel="noopener noreferrer">Read about the project <span aria-hidden="true">↗</span></a></div></section>
+    </details>
+  </main>
+  <footer><a class="brand" href="./">NuanceBridge.</a><p>An independent portfolio project, inspired by an IBM SkillsBuild prototype.<br>Not affiliated with IBM. Built for human connection.</p><span class="mono">MEANING &gt; WORDS</span></footer>
+  <dialog id="settings" aria-labelledby="settings-title"><form id="settings-form"><div class="dialog-heading"><h2 id="settings-title">Your live connection</h2><button type="button" class="close-button" data-close="settings" aria-label="Close settings">×</button></div><p class="dialog-copy">Connect your own OpenRouter account. Your key stays in this tab’s memory and is cleared on reload.</p><label for="api-key">OpenRouter API key</label><input id="api-key" type="password" autocomplete="off" spellcheck="false" placeholder="Paste your key for this session"><label for="model">Model ID</label><input id="model" maxlength="150" required spellcheck="false" value="openrouter/auto"><p class="help">Auto routes to an available model; pricing varies. You can enter a specific model ID instead.</p><div class="privacy-note">Live requests send your text, context, and enabled style preferences to OpenRouter and its selected provider. Requests may cost money. Use a separate key with a low credit limit; browser extensions may access credentials entered here.</div><a href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener noreferrer">Create a limited OpenRouter key ↗</a><div class="dialog-actions"><button type="button" id="disconnect" class="button outline">Forget key</button><button class="button primary" type="submit">Save settings</button></div><p id="connection-note" class="help" role="status"></p></form></dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <dialog id="starting-preview" aria-labelledby="starting-title"><div class="dialog-heading"><h2 id="starting-title">A starting point, your choice</h2><button class="close-button" data-close="starting-preview" aria-label="Close starting draft">×</button></div><p class="dialog-copy">This replaces the whole working draft only if you accept it. Your original and undo history remain available. Protected expressions must stay intact.</p><p id="starting-preview-text" class="preview-text" dir="auto"></p><button id="accept-starting" class="button primary">Use this starting draft</button></dialog>
+  <dialog id="peer-dialog" aria-labelledby="peer-title"><div class="dialog-heading"><h2 id="peer-title">Another human perspective</h2><button class="close-button" data-close="peer-dialog" aria-label="Close human feedback">×</button></div><p class="dialog-copy">Download a review copy and send it to someone you trust. It includes your draft, intention, and protected expressions. Share only what you are comfortable disclosing. This is a manual exchange, not a live collaboration room.</p><button id="download-peer" class="button outline">Download review copy</button><label for="peer-notes">Paste their feedback here</label><textarea id="peer-notes" maxlength="1000" rows="4" placeholder="e.g. My classmate says the ending sounds a little distant."></textarea><button id="save-peer" class="button primary">Use this feedback in this session</button><p class="help">Their feedback guides future suggestions; it never changes your draft automatically.</p></dialog>
+  <dialog id="voice-dialog" aria-labelledby="voice-title"><div class="dialog-heading"><h2 id="voice-title">Your voice, over time</h2><button class="close-button" data-close="voice-dialog" aria-label="Close voice profile">×</button></div><p class="dialog-copy">Save a short example only if you want it remembered on this browser. Live writing requests include it only when “Use saved habits and writing sample” is checked. Drafts and session feedback are not automatically saved.</p><label class="check-label"><input id="use-voice" type="checkbox" checked>Use saved habits and writing sample</label><label for="voice-sample">An example that sounds like you (up to 1,000 characters)</label><textarea id="voice-sample" maxlength="1000" rows="4"></textarea><div class="dialog-actions"><button id="clear-voice" class="button outline">Forget example</button><button id="save-voice" class="button primary">Save example on this browser</button></div><button id="edit-style-from-writing" class="text-button">Manage my expression habits ↗</button><p id="voice-status" class="help" role="status"></p></dialog>
+  <noscript><p class="error">Enable JavaScript to use the translation companion.</p></noscript>
+</body>
+</html>

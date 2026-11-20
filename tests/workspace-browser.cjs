@@ -5,10 +5,10 @@ const fs = require('node:fs');
 const path = require('node:path');
 const assert = require('node:assert/strict');
 const root = path.join(__dirname, '..');
-const files = fs.readdirSync(root).filter(name => /\.(js|css|svg)$/.test(name)).concat('index.html');
+const files = fs.readdirSync(root).filter(name => /\.(js|css|svg)$/.test(name)).concat('index.html', 'writing-tools.html');
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml' };
 const server = http.createServer((req, res) => {
-  const file = req.url === '/' ? 'index.html' : req.url.slice(1).split('?')[0];
+  const file = req.url === '/' ? 'writing-tools.html' : req.url.slice(1).split('?')[0];
   if (!files.includes(file)) return res.writeHead(404).end();
   res.setHeader('Content-Type', mime[path.extname(file)]); res.end(fs.readFileSync(path.join(root, file)));
 });

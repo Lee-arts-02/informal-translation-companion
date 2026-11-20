@@ -5,7 +5,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const root=path.join(__dirname,'..');
 const server=http.createServer((req,res)=>{
-  const file=(req.url==='/'?'canvas.html':req.url.slice(1)).split('?')[0];
+  const file=(req.url==='/'?'index.html':req.url.slice(1)).split('?')[0];
   if (!/^[\w.-]+\.(html|css|js|svg)$/.test(file)) return res.writeHead(404).end();
   try {
     res.setHeader('Content-Type',({'.html':'text/html','.css':'text/css','.js':'text/javascript','.svg':'image/svg+xml'})[path.extname(file)]);
@@ -25,7 +25,7 @@ const server=http.createServer((req,res)=>{
         translation:'A warm hello.', alternatives:{casual:'Hey!',direct:'Hello.',formal:'Greetings.'},nuance:'Warm phrasing.'
       })}}]})});
     });
-    await page.goto('http://127.0.0.1:'+server.address().port+'/canvas.html');
+    await page.goto('http://127.0.0.1:'+server.address().port+'/');
     assert.equal(await page.locator('#writing-tools').count(),0);
     await page.getByRole('tab',{name:'Style Memory',exact:true}).click();
     await page.locator('#habits-open').click();
