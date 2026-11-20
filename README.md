@@ -1,5 +1,13 @@
 # NuanceBridge
 
+## Built-in AI on Vercel
+
+The homepage uses the same-origin `/api/ai` backend by default: visitors can translate and request wording suggestions without entering a key. The server calls IBM Bob using the production Secret `BOB_API_KEY`; `BOB_MODEL` optionally selects a model and defaults to `fast`. Never add the actual key to HTML, JavaScript, Git, client-visible configuration, or a `NEXT_PUBLIC_` variable. An optional personal OpenRouter connection remains in AI settings.
+
+Set `BOB_API_KEY` as a **Production Secret** in the existing Vercel project's environment settings, then redeploy. The endpoint returns only a non-sensitive availability flag on GET. POST accepts only translation and selected-text revision input; the server builds its own prompts, fixes the provider URL/model, bounds inputs and output tokens, applies per-instance throttling/concurrency protection, and suppresses upstream error details. These per-instance limits are not an account-wide spending cap.
+
+Requests send the text, context and enabled preferences to IBM Bob only on an explicit translation or suggestion request. No owner credential is sent to the browser or stored with habits. GitHub Pages cannot run the hosted endpoint; its static version can still use an optional personal OpenRouter connection.
+
 The root homepage now opens the Translator with voice input, read-aloud and Style Memory. `canvas.html` remains available; previous writing tools are preserved at `writing-tools.html`.
 
 ## Writing Canvas

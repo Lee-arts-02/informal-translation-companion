@@ -1,5 +1,6 @@
 export const copy = {
   en: {
+    builtinSettings:'AI settings', hostedConnectionHelp:'AI is provided by this website; no key is needed. When you translate or request a revision, the text, chosen context and enabled preferences are sent to IBM Bob. You can optionally use your own OpenRouter key below.',
 listenSource:"Listen to original text",
 listenOutput:"Listen to translation",
 listenStop:"Stop reading",
@@ -107,7 +108,7 @@ voiceLanguageError:"This speech service does not support that language. Choose a
     outputBusy: "Preparing a suggestion…",
     outputInvalid: "No usable suggestion was returned. Try again or type your own wording.",
     outputSuggestionReady: "Review the suggestion, then replace the selection if you like it.",
-    outputPrivacy: "Suggest wording sends this translation and your request to OpenRouter. Type a replacement to edit without AI.",
+    outputPrivacy: "Suggest wording sends the selected text, surrounding translation and your request to website AI (IBM Bob by default; OpenRouter only with your own key). Manual replacements do not use AI.",
     sourcePlaceholder: "Enter a phrase in any language or a rough draft…",
 
 "option_autodetect":"Auto-detect",
@@ -143,7 +144,7 @@ voiceLanguageError:"This speech service does not support that language. Choose a
 "channel":"Channel",
 "tone":"Tone",
 "translationHabits":"Use my saved writing preferences",
-"translationPrivacy":"Live translation sends this original thought, chosen context and enabled preferences to OpenRouter. Your draft is not sent.",
+"translationPrivacy":"Translation sends your text, chosen context and enabled preferences to website AI (IBM Bob by default; OpenRouter only with your own key).",
 "translateThought":"Translate",
 "nuanceTitle":"Cultural meaning & expression choices",
 "useTranslation":"Use as draft (replaces current text)",
@@ -165,6 +166,7 @@ voiceLanguageError:"This speech service does not support that language. Choose a
     manualReason:'Wording adjusted by you. Review the meaning again.',skip:'Skip to draft',interface:'Interface',connect:'Connect AI',connected:'AI connected',eyebrow:'A LITTLE ROOM TO THINK',title:'Make it sound like you.',intro:'Write in any language. Mark a thought. Shape the sentence.',example:'Try an example ↗',write:'Write & select',pen:'Underline',undo:'Undo',hideChanges:'Hide changes',showChanges:'Show changes',edit:'Keep writing',copy:'Copy text ↗',draftLabel:'Your draft',placeholder:'Start with what you want to say…',hint:'Select the words you want to work on.',penHint:'Draw across the words you want to work on.',removed:'Removed',added:'Added',supporting:'Supporting change outside your selection',goalLabel:'What would you like to change?',goalPlaceholder:'How would you like this to sound?',preview:'Preview sentence ↗',cancel:'Cancel',accept:'Accept changes',acceptOutside:'Accept, including supporting edits',dismiss:'Dismiss',adjust:'Adjust wording',replacementLabel:'Suggested sentence',remember:'Remember this preference…',otherTools:'Translation, language checks & more ↗',habits:'My writing habits',private:'Drafts stay in this tab. You decide what to send.',popoverTitle:'What should change here?',intentPlaceholder:'e.g. Less of a promise, more of an intention',softer:'Softer',clearer:'Clearer',natural:'More natural',addNote:'Add note',connectTitle:'Your AI connection',connectionHelp:'Your key stays in this tab. Each preview sends the source text, chosen context and enabled preferences to OpenRouter and its model provider. Provider charges may apply.',modelLabel:'Model ID',saveConnection:'Use this connection',disconnect:'Clear key',habitHelp:'Only preferences you save. Review or remove them here. Applied to canvas previews on this browser; your current instruction always wins.',habitLabel:'Preference for future revisions',saveHabit:'Save preference',useHabits:'Use these preferences in previews',remove:'Remove',emptyHabits:'No saved preferences yet.',softerGoal:'Soften the commitment without losing what I mean.',clearerGoal:'Make the meaning clearer without changing the facts.',naturalGoal:'Make this sound more natural, keeping my voice.',draftChanged:'Draft updated. Previous change marks were cleared.',pending:'Preview · not applied',applied:'Accepted · changes visible',previewReady:'Review the highlighted changes in your sentence before accepting.',accepted:'Accepted. Change marks stay visible; copied text contains only the final wording.',dismissed:'Suggestion dismissed. Your draft is unchanged.',undone:'Restored the previous draft and its change marks.',copied:'Clean draft copied.',copyError:'Clipboard unavailable. Use Keep writing to select and copy your draft.',busy:'Preparing a sentence preview…',cancelled:'Request cancelled. Your draft is unchanged.',noChange:'This suggestion leaves the sentence unchanged. Adjust the wording or dismiss it.',exampleStatus:'Authored example · no AI request. Select “send” to try a softer commitment.',exampleReason:'“Try to” softens the promise. It is outside “send”, so the supporting edit is marked separately.',exampleOnly:'This free example supports the original “send” / softer request. Connect AI for other edits.',modeExample:'Authored example · no AI request',modeLive:'Live AI preview',selectFirst:'Select the words you want to revise first.',rememberHelp:'Review the preference before saving. This does not save your draft.',saved:'Preference saved on this browser. No draft text or API key was stored.',storageError:'Browser storage is unavailable. This preference will last for this visit only.',limit:'You can save up to 12 preferences. Remove one first.',keyCleared:'API key cleared.',connectionSaved:'Connection ready. No text has been sent.',close:'Close',dismissNote:'Dismiss note',confirmExample:'Replace your current draft with the example?',focusHint:'Your selection is the focus; supporting sentence edits will be marked.',writeHint:'Writing is free-form. Mark any passage when you want help.'
   },
   zh: {
+    builtinSettings:'AI 设置', hostedConnectionHelp:'网站已内置 AI，无需填写密钥。翻译或请求改写时，文字、上下文及启用的偏好会发送给 IBM Bob。也可以在下方选填自己的 OpenRouter 密钥。',
 listenSource:"朗读原文",
 listenOutput:"朗读译文",
 listenStop:"停止朗读",
@@ -272,7 +274,7 @@ voiceLanguageError:"语音服务不支持此语言，请选择其他口述语言
     outputBusy: "正在生成建议……",
     outputInvalid: "未收到可用建议，请重试或直接输入措辞。",
     outputSuggestionReady: "请核对建议，再决定是否替换选中文字。",
-    outputPrivacy: "「建议措辞」会向 OpenRouter 发送译文和修改要求。直接输入替换文字不会调用 AI。",
+    outputPrivacy: "请求改写会将选区、上下文和修改要求发送给网站 AI（默认 IBM Bob；选用自备密钥时为 OpenRouter）。手动替换不会调用 AI。",
     sourcePlaceholder: "输入任意语言的短语，或粘贴草稿……",
 
 "option_autodetect":"自动识别",
@@ -308,7 +310,7 @@ voiceLanguageError:"语音服务不支持此语言，请选择其他口述语言
 "channel":"沟通渠道",
 "tone":"语气",
 "translationHabits":"使用已保存的写作偏好",
-"translationPrivacy":"实时翻译会将这里的原文、所选情境及启用的偏好发送至 OpenRouter，不发送下方草稿。",
+"translationPrivacy":"翻译会将原文、上下文与启用的偏好发送给网站 AI（默认 IBM Bob；选用自备密钥时为 OpenRouter）。",
 "translateThought":"翻译",
 "nuanceTitle":"文化含义与表达选择",
 "useTranslation":"用作草稿（替换当前正文）",

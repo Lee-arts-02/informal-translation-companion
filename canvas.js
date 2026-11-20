@@ -26,10 +26,10 @@ const el = (tag, text, className) => {
 const updateContextButtons = setupContextButtons();
 let outputRevision, voice, readAloud;
 const connect = () => { outputRevision?.close(); $('connection').showModal(); $('canvas-key').focus(); };
-const translationTools = setupTranslation({t, connection:()=>({apiKey:key,model}),
+const translationTools = setupTranslation({t, connection:()=>({apiKey:key,model,hosted:!key}),
   preferences:()=>habits.map(({rule})=>rule), connect, onOutputChange:()=>{outputRevision?.close(); readAloud?.stop();},
 });
-outputRevision = setupOutputRevision({t, connection:()=>({apiKey:key,model}), connect,
+outputRevision = setupOutputRevision({t, connection:()=>({apiKey:key,model,hosted:!key}), connect,
   replace:(...args)=>translationTools.replace(...args),
 });
 voice = setupSpeechInput({t, beforeStart:()=>readAloud?.stop()});
@@ -43,7 +43,7 @@ function localize() {
   $('habit-input').placeholder = t('habitPlaceholder');
   document.querySelectorAll('[data-close].icon-button').forEach(node=>{node.ariaLabel=t('close');});
   $('skip-input').textContent = t($('memory-panel').hidden ? 'skipInput' : 'skipMemory');
-  $('connect').textContent = t(key ? 'connected' : 'connect');
+  $('connect').textContent = t(key ? 'connected' : 'builtinSettings');
   translationTools.render(); updateContextButtons(); renderHabits(); renderSuggestions(); voice.render(); readAloud.render();
 }
 $('ui-language').value = language;
@@ -56,11 +56,11 @@ $('connect').addEventListener('click',connect);
 $('connection-form').addEventListener('submit',event=>{
   event.preventDefault(); translationTools.cancel(); outputRevision.close();
   key=$('canvas-key').value.trim(); model=$('canvas-model').value.trim(); $('canvas-key').value='';
-  $('connection').close(); $('connect').textContent=t(key?'connected':'connect');
+  $('connection').close(); $('connect').textContent=t(key?'connected':'builtinSettings');
 });
 $('disconnect').addEventListener('click',()=>{
   translationTools.cancel(); outputRevision.close(); key=''; $('canvas-key').value='';
-  $('connection').close(); $('connect').textContent=t('connect');
+  $('connection').close(); $('connect').textContent=t('builtinSettings');
 });
 document.querySelectorAll('[data-close]').forEach(node=>node.addEventListener('click',()=>$(node.dataset.close).close()));
 function renderHabits() {

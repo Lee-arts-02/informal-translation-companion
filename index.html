@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="description" content="A free writing canvas with visible, sentence-level AI revisions. Your words, your choices.">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src https://openrouter.ai; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://openrouter.ai; object-src 'none'; base-uri 'self'; form-action 'none'">
   <title>Translator · NuanceBridge</title><link rel="icon" href="./favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="./canvas.css"><script type="module" src="./canvas.js"></script>
 </head>
 <body class="translator-page">
   <a id="skip-input" class="skip" href="#translation-source" data-i18n="skipInput">Skip to input</a>
-  <header class="app-header"><a href="./" class="brand">NuanceBridge<span>↗</span></a><div class="header-tools"><label class="language-label"><span data-i18n="interface">Interface</span><select id="ui-language" aria-label="Interface language"><option value="en">English</option><option value="zh">中文</option></select></label><button id="connect" data-i18n="connect">Connect AI</button></div></header>
+  <header class="app-header"><a href="./" class="brand">NuanceBridge<span>↗</span></a><div class="header-tools"><label class="language-label"><span data-i18n="interface">Interface</span><select id="ui-language" aria-label="Interface language"><option value="en">English</option><option value="zh">中文</option></select></label><button id="connect" data-i18n="builtinSettings">AI settings</button></div></header>
   <main>
     <nav class="app-tabs" role="tablist" aria-label="Workspace">
       <button id="translator-tab" type="button" role="tab" aria-selected="true" aria-controls="translator-panel" data-i18n="translatorTab">Translate</button>
@@ -39,7 +39,7 @@
           <label><span data-i18n="tone">Tone</span><select id="translation-tone"><option value="Natural" data-i18n="option_natural">Natural</option><option value="Warm" data-i18n="option_warm">Warm</option><option value="Humorous" data-i18n="option_humorous">Humorous</option><option value="Sarcastic" data-i18n="option_sarcastic">Sarcastic</option><option value="Professional" data-i18n="option_professional">Professional</option><option value="Empathetic" data-i18n="option_empathetic">Empathetic</option><option value="Direct" data-i18n="option_direct">Direct</option><option value="Emoji / Meme" data-i18n="emojiTone">Emoji / Meme</option></select></label>
         </div>
         <label class="habit-toggle style-profile"><span><strong data-i18n="translationHabits">Use my saved writing preferences</strong><small data-i18n="profileHelp">Apply preferences you save in Style Memory.</small></span><input id="translation-use-habits" type="checkbox" role="switch" checked></label>
-        <p class="tool-help" data-i18n="translationPrivacy">Live translation sends this original thought, chosen context and enabled preferences to OpenRouter. Your draft is not sent.</p>
+        <p class="tool-help" data-i18n="translationPrivacy">Translation sends your text, chosen context and enabled preferences to the website’s IBM Bob AI, or to OpenRouter if you choose your own key.</p>
         <div class="note-actions"><button id="translation-submit" class="primary" data-i18n="translateThought">Translate</button><button id="translation-cancel" type="button" hidden data-i18n="cancel">Cancel</button></div>
         <p id="translation-status" role="status" aria-live="polite"></p>
       </form>
@@ -86,7 +86,7 @@
     <form id="output-revision-form">
       <label for="output-goal" data-i18n="outputGoal">How should this sound?</label>
       <input id="output-goal" maxlength="400">
-      <p class="tool-help" data-i18n="outputPrivacy">Suggest wording sends this translation and your request to OpenRouter. Type a replacement to edit without AI.</p>
+      <p class="tool-help" data-i18n="outputPrivacy">Suggest wording sends the selected text, surrounding translation and your request to the website’s IBM Bob AI, or your optional OpenRouter connection. Manual replacements do not use AI.</p>
       <button id="suggest-output" type="submit" class="primary" data-i18n="suggestOutput">Suggest wording</button>
     </form>
     <label for="output-replacement" data-i18n="outputReplacement">Replacement wording</label>
@@ -94,7 +94,7 @@
     <p id="output-revision-status" role="status" aria-live="polite"></p>
     <button id="apply-output" type="button" class="primary" data-i18n="applyOutput">Replace selection</button>
   </section>
-  <dialog id="connection"><form id="connection-form"><div class="dialog-heading"><h2 data-i18n="connectTitle">Your AI connection</h2><button type="button" data-close="connection" class="icon-button" aria-label="Close">×</button></div><p data-i18n="connectionHelp">Your OpenRouter key stays in this tab. Text is sent only when you request a preview. Provider charges may apply.</p><label>OpenRouter API key<input id="canvas-key" type="password" autocomplete="off" spellcheck="false"></label><label for="canvas-model" data-i18n="modelLabel">Model ID</label><input id="canvas-model" value="openrouter/auto" maxlength="150" required><button type="submit" class="primary" data-i18n="saveConnection">Use this connection</button><button id="disconnect" type="button" data-i18n="disconnect">Clear key</button></form></dialog>
+  <dialog id="connection"><form id="connection-form"><div class="dialog-heading"><h2 data-i18n="connectTitle">Your AI connection</h2><button type="button" data-close="connection" class="icon-button" aria-label="Close">×</button></div><p data-i18n="hostedConnectionHelp">AI is provided by this website; no key is needed. You can optionally use your own OpenRouter connection below.</p><label>Optional: your own OpenRouter API key<input id="canvas-key" type="password" autocomplete="off" spellcheck="false"></label><label for="canvas-model" data-i18n="modelLabel">Model ID</label><input id="canvas-model" value="openrouter/auto" maxlength="150" required><button type="submit" class="primary" data-i18n="saveConnection">Use this connection</button><button id="disconnect" type="button" data-i18n="disconnect">Clear key</button></form></dialog>
   <dialog id="habits-dialog">
     <div class="dialog-heading"><h2 data-i18n="habitDialogTitle">Add a style preference</h2><button type="button" data-close="habits-dialog" class="icon-button" aria-label="Close">×</button></div>
     <form id="habit-form">

@@ -17,8 +17,14 @@ const server=http.createServer((req,res)=>{
   const browser=await chromium.launch({headless:true,...(process.env.CHROMIUM_EXECUTABLE?{executablePath:process.env.CHROMIUM_EXECUTABLE}:{})});
   try {
     const page=await browser.newPage({viewport:{width:1440,height:1000}});
-    const errors=[], requests=[];
+    const errors=[], requests=[], hosted=[];
     page.on('pageerror',e=>errors.push(e.message));
+    await page.route('**/api/ai',async route=>{
+      const body=route.request().postDataJSON();hosted.push(body);
+      assert.equal(route.request().headers().authorization,undefined);
+      const result=body.action==='revise'?{replacement:'friendly'}:{translation:'A warm hello.',alternatives:{casual:'Hey!',direct:'Hello.',formal:'Greetings.'},nuance:'Warm phrasing.'};
+      await route.fulfill({contentType:'application/json',body:JSON.stringify({choices:[{message:{content:JSON.stringify(result)}}]})});
+    });
     await page.route('https://openrouter.ai/api/v1/chat/completions',async route=>{
       requests.push(route.request().postDataJSON());
       await route.fulfill({contentType:'application/json',body:JSON.stringify({choices:[{message:{content:JSON.stringify({
@@ -41,6 +47,18 @@ const server=http.createServer((req,res)=>{
     await page.getByRole('tab',{name:'Translate',exact:true}).click();
     await page.getByRole('button',{name:'Instagram',exact:true}).click();
     await page.getByRole('button',{name:'Emoji / Meme',exact:true}).click();
+    await page.locator('#translation-source').fill('Hello');
+    await page.locator('#translation-submit').click();
+    await page.locator('#translation-result').waitFor({state:'visible'});
+    assert.equal(await page.locator('#connection').isVisible(),false);
+    assert.equal(hosted.length,1);assert.equal(hosted[0].action,'translate');
+    assert.equal(hosted[0].input.channel,'Instagram');assert.match(hosted[0].input.preferences[0],/emmm/);
+    await page.locator('#translation-output').evaluate(node=>{node.focus();node.setSelectionRange(2,6);node.dispatchEvent(new Event('pointerup'));});
+    await page.locator('#output-goal').fill('Make this friendlier.');await page.locator('#suggest-output').click();
+    await page.waitForFunction(()=>document.getElementById('output-replacement').value==='friendly');
+    assert.equal(hosted[1].action,'revise');await page.locator('#apply-output').click();
+    assert.equal(await page.locator('#translation-output').inputValue(),'A friendly hello.');
+    assert.equal(await page.locator('#connection').isVisible(),false);
     await page.locator('#connect').click();
     await page.locator('#canvas-key').fill('test-fixture-key');
     await page.locator('#connection-form button[type=submit]').click();

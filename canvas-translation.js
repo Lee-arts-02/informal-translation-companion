@@ -40,8 +40,8 @@ export function setupTranslation({ t, connection, preferences, connect, onOutput
   for (const field of fields) $('translation-' + field).addEventListener('input', invalidate);
   $('canvas-translation-form').addEventListener('submit', async event => {
     event.preventDefault();
-    const { apiKey, model } = connection();
-    if (!apiKey) { connect(); message('translationConnect'); return; }
+    const { apiKey, model, hosted = false } = connection();
+    if (!apiKey && !hosted) { connect(); message('translationConnect'); return; }
     cancel(); result = null; edits.clear(); $('translation-result').hidden = true; renderOutput();
     const id = generation; controller = new AbortController();
     supplied = $('translation-use-habits').checked ? [...preferences()] : [];
@@ -50,7 +50,7 @@ export function setupTranslation({ t, connection, preferences, connect, onOutput
       channel:$('translation-channel').value, tone:$('translation-tone').value, preferences:supplied };
     $('translation-submit').disabled = true; $('translation-cancel').hidden = false; message('translationBusy');
     try {
-      const next = await translate(input, { apiKey, model, signal:controller.signal });
+      const next = await translate(input, { apiKey, model, hosted, signal:controller.signal });
       if (id !== generation) return;
       result = next; version = 'translation'; render(); message('translationReady');
     } catch (error) { if (id === generation) $('translation-status').textContent = error.message; }

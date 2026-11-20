@@ -65,8 +65,8 @@ export function setupOutputRevision({t, connection, connect, replace}) {
     if (!selected) return;
     const instruction = goal.value.trim();
     if (!instruction) { notice.textContent = t('outputGoal'); goal.focus(); return; }
-    const {apiKey, model} = connection();
-    if (!apiKey) { close(); connect(); return; }
+    const {apiKey, model, hosted = false} = connection();
+    if (!apiKey && !hosted) { close(); connect(); return; }
     cancel();
     const controller = new AbortController(), snapshot = selected;
     pending = controller; suggest.disabled = true; notice.textContent = t('outputBusy');
@@ -77,7 +77,7 @@ export function setupOutputRevision({t, connection, connect, replace}) {
           before:snapshot.before.slice(0,snapshot.start), selected:snapshot.before.slice(snapshot.start,snapshot.end),
           after:snapshot.before.slice(snapshot.end), instruction,
         })},
-      ]}, {apiKey, signal:controller.signal});
+      ]}, {apiKey, hosted, action:'revise', signal:controller.signal});
       if (pending !== controller || selected !== snapshot) return;
       const value = JSON.parse(content.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '')).replacement;
       if (typeof value !== 'string' || !value.trim() || value.length > 30000) throw new Error(t('outputInvalid'));

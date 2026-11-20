@@ -43,8 +43,8 @@ export async function translate(input, options) {
   return parseResult(await requestCompletion(buildRequest(input, options.model), options));
 }
 
-export async function requestCompletion(body, { apiKey, signal, fetcher = fetch, timeoutMs = 60000 }) {
-  if (typeof apiKey !== 'string' || !apiKey.trim()) throw new Error('Add your OpenRouter API key in settings first.');
+export async function requestCompletion(body, { apiKey, hosted = false, action = 'translate', signal, fetcher = fetch, timeoutMs = 60000 }) {
+  if (!hosted && (typeof apiKey !== 'string' || !apiKey.trim())) throw new Error('Add your OpenRouter API key in settings first.');
   const controller = new AbortController();
   let timedOut = false;
   const cancel = () => controller.abort();
@@ -52,12 +52,17 @@ export async function requestCompletion(body, { apiKey, signal, fetcher = fetch,
   signal?.addEventListener('abort', cancel, { once: true });
   const timer = setTimeout(() => { timedOut = true; controller.abort(); }, timeoutMs);
   try {
-    const response = await fetcher(ENDPOINT, {
+    const input = hosted ? JSON.parse(body.messages[1].content) : null;
+    const response = await fetcher(hosted ? '/api/ai' : ENDPOINT, {
       method: 'POST', signal: controller.signal,
-      headers: { Authorization: `Bearer ${apiKey.trim()}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      headers: hosted ? {'Content-Type':'application/json'} : { Authorization: `Bearer ${apiKey.trim()}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(hosted ? {action,input} : body),
     });
     if (!response.ok) {
+      if (hosted) {
+        const errors = {400:'Please check your text and revision instructions.',403:'Please use AI from the website.',429:'Please wait a moment before making another AI request.',503:'Built-in AI is not configured yet.'};
+        throw new Error(errors[response.status] || 'Built-in AI is temporarily unavailable. Please try again later.');
+      }
       const messages = { 400: 'The selected model could not process this request. Check the model ID or try another model.',
         401: 'Your API key was not accepted. Check it in settings.', 403: 'This key or model is not permitted. Check your OpenRouter settings.',
         402: 'Your OpenRouter account needs credits or a higher key spending limit.',
