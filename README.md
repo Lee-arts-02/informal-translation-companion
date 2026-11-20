@@ -2,7 +2,15 @@
 
 ## Writing Canvas
 
-The canvas supports **multiple marked passages and cumulative requirements per passage**. Mark another span without losing earlier notes, or mark the same span to add another requirement. Numbered notes list every requirement and allow independent removal. Previewing a sentence sends all of its relevant note requirements together. Notes survive accepted changes, Undo, and manual draft edits; a removed anchor keeps its note and asks for a new text selection. **Check connection** verifies an OpenRouter key without sending a draft. See [browser AI integration options](plan/web-ai-integration.md) for BYOK, OAuth PKCE, and server-backed deployment choices.
+Open `canvas.html` for the two-panel translator. Enter text and choose the language, recipient, channel and tone on the left; compare translations and read cultural notes on the right. Editing the input clears the previous preview.
+
+Highlight part of the translation to open its revision menu. Type replacement wording directly or request a suggestion with OpenRouter. Applying a replacement changes only the selection, and each expression version keeps its own edits and undo history. The former Writing Canvas section has been removed from this page.
+
+Use **Speak your thought** for browser-supported dictation. Select the speaking language first, stop when finished, and review the transcript before translating. Audio may be processed by the browser provider; this app does not record or store audio. Unsupported browsers retain typed input. LinkedIn, Instagram and Reddit are available as channels, and Emoji / Meme is available as a tone.
+
+In **Style Memory**, use example rule chips (such as emmm, lol and cool) as editable starters. Add or remove categorized preferences and reset your rules when you want to start over. The wording comparison is a static illustration. Existing uncategorized preferences appear under General.
+
+Translation requests send only the translation input, chosen context and explicitly enabled canvas preferences, not the writing canvas draft. Supplied preferences are listed without claiming causal influence. **Use as draft** requires confirmation when replacing existing text and supports the canvas Undo action. There is no automatic preference learning or numerical confidence score.
 
 Open `canvas.html` (also linked as **Writing canvas** from the home page) for document-first revision. English is the default interface; Chinese is available through the interface picker. Write or paste a draft, select or underline a phrase, and add a short revision goal. The preview shows the enclosing sentence directly in the document, with deleted and added text and a separate highlight for supporting changes outside the selection. Changes are never applied until accepted. Accepted changes remain visible; **Keep writing**, **Show/Hide changes**, **Undo**, and copying clean text are available.
 
